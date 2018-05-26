@@ -19,6 +19,8 @@ import argparse
 
 from skimage import io
 
+from dataStorage import DataStorage
+
 ###STAŁE
 predictor_path = "landmark/shape_predictor_68_face_landmarks.dat"
 detector = dlib.get_frontal_face_detector()
@@ -30,7 +32,6 @@ cnnFaceDetector = dlib.cnn_face_detection_model_v1("landmark/mmod_human_face_det
 # Core/landmark/vgg_face_caffe/vgg_face_caffe/VGG_FACE_deploy.prototxt
 # net = cv2.dnn.readNetFromCaffe("landmark/PAM_frontal_AlexNet/PAM_frontal_deploy.prototxt.txt", "landmark/PAM_frontal_AlexNet/snap__iter_100000.caffemodel")
 
-from Core.face_landrmark_detection import faceLandmarkDetection
 
 faceFolderPath = "Pozytywne/*"
 badFaceFolderPath = "Negatywne/"
@@ -59,7 +60,9 @@ badResult = 0
 
 goodDeepLearning = 0
 badDeepLearning = 0
-###
+### WYGENEROWANE
+
+analysedData = []
 
 ### Sprawdzenie czy istnieje plik do logów
 getTime = str(datetime.datetime.now().ctime())
@@ -178,7 +181,6 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         roi_gray = grayImage[y:y + height, x:x + w]
         index = 0
 
-
         fp0 = [shape[0][0], shape[0][1]]
         fp1 = [shape[1][0], shape[1][1]]
         fp2 = [shape[2][0], shape[2][1]]
@@ -248,15 +250,15 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         fp66 = [shape[66][0], shape[66][1]]
         fp67 = [shape[67][0], shape[67][1]]
 
-            # for (x, y) in shape:
-            #     # xp1 = shape[0,0]
-            #     cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
-                # print (index)
-                # # print(str(x))
-                # # print(str(y))
-                # index+=1
-                # cv2.imshow("image", inputFile)
-                # cv2.waitKey(0)
+        # for (x, y) in shape:
+        #     # xp1 = shape[0,0]
+        #     cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
+        # print (index)
+        # # print(str(x))
+        # # print(str(y))
+        # index+=1
+        # cv2.imshow("image", inputFile)
+        # cv2.waitKey(0)
 
         #     obliczanie czy twarz jest przechylonwa wzdłuż jaw
         fa = FaceAligner(predictor, desiredFaceWidth=1000)
@@ -302,16 +304,16 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
                     # determine the facial landmarks for the face region, then
                     # convert the facial landmark (x, y)-coordinates to a NumPy
                     # array
-                        shape = predictor(grayImageAligned, rect)
-                        # nomnom = predictor.full_object_detection(shape)
-                        shape = face_utils.shape_to_np(shape)
+                    shape = predictor(grayImageAligned, rect)
+                    # nomnom = predictor.full_object_detection(shape)
+                    shape = face_utils.shape_to_np(shape)
 
-                    # Pokazanie że wykrywa twarz - można pominąć
-                    # cv2.rectangle(inputFile, (x, y), (x + w, y + int(h+(h*0.2))), (255, 0, 0), 2)
-                    # convert dlib's rectangle to a OpenCV-style bounding box
-                    # [i.e., (x, y, w, h)], then draw the face bounding box
+                # Pokazanie że wykrywa twarz - można pominąć
+                # cv2.rectangle(inputFile, (x, y), (x + w, y + int(h+(h*0.2))), (255, 0, 0), 2)
+                # convert dlib's rectangle to a OpenCV-style bounding box
+                # [i.e., (x, y, w, h)], then draw the face bounding box
 
-                    # udowodnienie że twarz wykrywa
+                # udowodnienie że twarz wykrywa
                 (x, y, w, h) = face_utils.rect_to_bb(rect)
                 if x < 0:
                     x = 0
@@ -339,14 +341,13 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
                 cv2.circle(faceAligned, (x, y), 1, (0, 0, 255), 5)
 
             cv2.circle(faceAligned, (xCenter, yCenter), 1, (200, 255, 23), 5)
+            analysedData.append(DataStorage(inputFilePath, 0, inputFile, faceAligned, shape, False))
+            print("analysedData: " + str(analysedData.__len__()))
+
             cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceAligned)
+
             # cv2.imshow("Aligned", faceAligned)
             # cv2.waitKey(0)
-
-
-
-
-
 
     # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
 
@@ -505,7 +506,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print(image)
                 print("Iteracja: " + str(counter))
                 counter += 1
-                dlibFaceDetector(image, cpathGood, cpathGoodBad)
+                # dlibFaceDetector(image, cpathGood, cpathGoodBad)
                 if printDetails:
                     printDetails = False
             printDetails = True
@@ -519,7 +520,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print(image)
                 print("Iteracja: " + str(counter))
                 counter += 1
-                dlibFaceDetector(image, cpathBadBad, cpathBad)
+                # dlibFaceDetector(image, cpathBadBad, cpathBad)
                 if printDetails:
                     printDetails = False
             printDetails = True
@@ -529,7 +530,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
             badResult = 0
             ######################################################################################
             file.writelines("\n\npitch\t" + "\troll\t" "\tyaw\t" + "filename\n")
-            for i in range(1, 11, 1):
+            for i in range(1, 4, 1):
 
                 lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
                 # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
@@ -571,6 +572,90 @@ def researchOrderer(alghoritmName, mode, values, clear):
         #         truePositive + trueNegative + falsePositive + falseNegative))
 
 
+def firstFaceDetector(aData):
+    for member in aData:
+        member.printer()
+        # member.alignedImage
+        height, width = member.alignedImage.shape[:2]
+        print(height, width)
+        fp0 = [member.shape[0][0], member.shape[0][1]]
+        fp1 = [member.shape[1][0], member.shape[1][1]]
+        fp2 = [member.shape[2][0], member.shape[2][1]]
+        fp3 = [member.shape[3][0], member.shape[3][1]]
+        fp4 = [member.shape[4][0], member.shape[4][1]]
+        fp5 = [member.shape[5][0], member.shape[5][1]]
+        fp6 = [member.shape[6][0], member.shape[6][1]]
+        fp7 = [member.shape[7][0], member.shape[7][1]]
+        fp8 = [member.shape[8][0], member.shape[8][1]]
+        fp9 = [member.shape[9][0], member.shape[9][1]]
+        fp10 = [member.shape[10][0], member.shape[10][1]]
+        fp11 = [member.shape[11][0], member.shape[11][1]]
+        fp12 = [member.shape[12][0], member.shape[12][1]]
+        fp13 = [member.shape[13][0], member.shape[13][1]]
+        fp14 = [member.shape[14][0], member.shape[14][1]]
+        fp15 = [member.shape[15][0], member.shape[15][1]]
+        fp16 = [member.shape[16][0], member.shape[16][1]]
+        fp17 = [member.shape[17][0], member.shape[17][1]]
+        fp18 = [member.shape[18][0], member.shape[18][1]]
+        fp19 = [member.shape[19][0], member.shape[19][1]]
+        fp20 = [member.shape[20][0], member.shape[20][1]]
+        fp21 = [member.shape[21][0], member.shape[21][1]]
+        fp22 = [member.shape[22][0], member.shape[22][1]]
+        fp23 = [member.shape[23][0], member.shape[23][1]]
+        fp24 = [member.shape[24][0], member.shape[24][1]]
+        fp25 = [member.shape[25][0], member.shape[25][1]]
+        fp26 = [member.shape[26][0], member.shape[26][1]]
+        fp27 = [member.shape[27][0], member.shape[27][1]]
+        fp28 = [member.shape[28][0], member.shape[28][1]]
+        fp29 = [member.shape[29][0], member.shape[29][1]]
+        fp30 = [member.shape[30][0], member.shape[30][1]]
+        fp31 = [member.shape[31][0], member.shape[31][1]]
+        fp32 = [member.shape[32][0], member.shape[32][1]]
+        fp33 = [member.shape[33][0], member.shape[33][1]]
+        fp34 = [member.shape[34][0], member.shape[34][1]]
+        fp35 = [member.shape[35][0], member.shape[35][1]]
+        fp36 = [member.shape[36][0], member.shape[36][1]]
+        fp37 = [member.shape[37][0], member.shape[37][1]]
+        fp38 = [member.shape[38][0], member.shape[38][1]]
+        fp39 = [member.shape[39][0], member.shape[39][1]]
+        fp40 = [member.shape[40][0], member.shape[40][1]]
+        fp41 = [member.shape[41][0], member.shape[41][1]]
+        fp42 = [member.shape[42][0], member.shape[42][1]]
+        fp43 = [member.shape[43][0], member.shape[43][1]]
+        fp44 = [member.shape[44][0], member.shape[44][1]]
+        fp45 = [member.shape[45][0], member.shape[45][1]]
+        fp46 = [member.shape[46][0], member.shape[46][1]]
+        fp47 = [member.shape[47][0], member.shape[47][1]]
+        fp48 = [member.shape[48][0], member.shape[48][1]]
+        fp49 = [member.shape[49][0], member.shape[49][1]]
+        fp50 = [member.shape[50][0], member.shape[50][1]]
+        fp51 = [member.shape[51][0], member.shape[51][1]]
+        fp52 = [member.shape[52][0], member.shape[52][1]]
+        fp53 = [member.shape[53][0], member.shape[53][1]]
+        fp54 = [member.shape[54][0], member.shape[54][1]]
+        fp55 = [member.shape[55][0], member.shape[55][1]]
+        fp56 = [member.shape[56][0], member.shape[56][1]]
+        fp57 = [member.shape[57][0], member.shape[57][1]]
+        fp58 = [member.shape[58][0], member.shape[58][1]]
+        fp59 = [member.shape[59][0], member.shape[59][1]]
+        fp60 = [member.shape[60][0], member.shape[60][1]]
+        fp61 = [member.shape[61][0], member.shape[61][1]]
+        fp62 = [member.shape[62][0], member.shape[62][1]]
+        fp63 = [member.shape[63][0], member.shape[63][1]]
+        fp64 = [member.shape[64][0], member.shape[64][1]]
+        fp65 = [member.shape[65][0], member.shape[65][1]]
+        fp66 = [member.shape[66][0], member.shape[66][1]]
+        fp67 = [member.shape[67][0], member.shape[67][1]]
+
+        # 
+        # cv2.imshow("nope", member.alignedImage)
+        # 
+        # cv2.waitKey(0)
+
+
+
 researchOrderer("HOG", "HEALTHY", 0, 0)
+
+firstFaceDetector(analysedData)
 
 file.close()
