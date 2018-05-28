@@ -210,37 +210,37 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         fp26 = [shape[26][0], shape[26][1]]
         fp27 = [shape[27][0], shape[27][1]]
         fp28 = [shape[28][0], shape[28][1]]
-        fp29 = [shape[29][0], shape[29][1]]
-        fp30 = [shape[30][0], shape[30][1]]
+        fp29 = [shape[29][0], shape[29][1]]  # ponad czubkiemn nosa
+        fp30 = [shape[30][0], shape[30][1]]  # czubek nosa
         fp31 = [shape[31][0], shape[31][1]]
         fp32 = [shape[32][0], shape[32][1]]
         fp33 = [shape[33][0], shape[33][1]]
         fp34 = [shape[34][0], shape[34][1]]
         fp35 = [shape[35][0], shape[35][1]]
-        fp36 = [shape[36][0], shape[36][1]]
+        fp36 = [shape[36][0], shape[36][1]]  # lewy zewnętrzny kącik oka
         fp37 = [shape[37][0], shape[37][1]]
         fp38 = [shape[38][0], shape[38][1]]
-        fp39 = [shape[39][0], shape[39][1]]
-        fp40 = [shape[40][0], shape[40][1]]
-        fp41 = [shape[41][0], shape[41][1]]
-        fp42 = [shape[42][0], shape[42][1]]
+        fp39 = [shape[39][0], shape[39][1]]  # lewy wewnetrzny kącik oka
+        fp40 = [shape[40][0], shape[40][1]]  # dolna zrenica wewnetrzna
+        fp41 = [shape[41][0], shape[41][1]]  # dolna zrenica zewnetrzna
+        fp42 = [shape[42][0], shape[42][1]]  # prawy wewnetrzny kacik oka
         fp43 = [shape[43][0], shape[43][1]]
         fp44 = [shape[44][0], shape[44][1]]
-        fp45 = [shape[45][0], shape[45][1]]
-        fp46 = [shape[46][0], shape[46][1]]
-        fp47 = [shape[47][0], shape[47][1]]
-        fp48 = [shape[48][0], shape[48][1]]
-        fp49 = [shape[49][0], shape[49][1]]
+        fp45 = [shape[45][0], shape[45][1]]  # prawy zewnetrzny kacik oka
+        fp46 = [shape[46][0], shape[46][1]]  # zewnetrzna prawwa zrenica
+        fp47 = [shape[47][0], shape[47][1]]  # wewnetrzna prawa zrenica
+        fp48 = [shape[48][0], shape[48][1]]  # lewy kącik ust
+        fp49 = [shape[49][0], shape[49][1]]  # lewa warga zewnątrz
         fp50 = [shape[50][0], shape[50][1]]
-        fp51 = [shape[51][0], shape[51][1]]
+        fp51 = [shape[51][0], shape[51][1]]  # środek górnej wargi
         fp52 = [shape[52][0], shape[52][1]]
-        fp53 = [shape[53][0], shape[53][1]]
-        fp54 = [shape[54][0], shape[54][1]]
-        fp55 = [shape[55][0], shape[55][1]]
-        fp56 = [shape[56][0], shape[56][1]]
+        fp53 = [shape[53][0], shape[53][1]]  # prawa warga zewnątrz góra
+        fp54 = [shape[54][0], shape[54][1]]  # prawy kącik ust
+        fp55 = [shape[55][0], shape[55][1]]  # prawa warga zewnątrz dół
+        fp56 = [shape[56][0], shape[56][1]]  # środek dolnej wargi
         fp57 = [shape[57][0], shape[57][1]]
         fp58 = [shape[58][0], shape[58][1]]
-        fp59 = [shape[59][0], shape[59][1]]
+        fp59 = [shape[59][0], shape[59][1]]  # lewa warga dół
         fp60 = [shape[60][0], shape[60][1]]
         fp61 = [shape[61][0], shape[61][1]]
         fp62 = [shape[62][0], shape[62][1]]
@@ -253,6 +253,8 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         # for (x, y) in shape:
         #     # xp1 = shape[0,0]
         #     cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
+        #     cv2.imshow("image", inputFile)
+        #     cv2.waitKey(0)
         # print (index)
         # # print(str(x))
         # # print(str(y))
@@ -337,8 +339,13 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
             xCenter = (int)((w / 2) + x)
             yCenter = (int)((h / 2) + y)
             cv2.rectangle(faceAligned, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            counter = 0
             for (x, y) in shape:
                 cv2.circle(faceAligned, (x, y), 1, (0, 0, 255), 5)
+                # cv2.imshow("Aligned", faceAligned)
+                # cv2.waitKey(0)
+                counter += 1
+                print(counter)
 
             cv2.circle(faceAligned, (xCenter, yCenter), 1, (200, 255, 23), 5)
             analysedData.append(DataStorage(inputFilePath, 0, inputFile, faceAligned, shape, False))
@@ -348,85 +355,6 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
 
             # cv2.imshow("Aligned", faceAligned)
             # cv2.waitKey(0)
-
-    # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
-
-    # #############################################################################ETAP 2
-    # my_detector = faceLandmarkDetection("landmark/shape_predictor_68_face_landmarks.dat")
-    #
-    # # rozmiar kamery
-    # size = inputFile.shape
-    #
-    # xCenter = (int)((w / 2) + x)
-    # yCenter = (int)((h / 2) + y)
-    # cv2.circle(inputFile, (xCenter, yCenter), 1, (200, 134, 23), 5)
-    # # cv2.imshow("image", inputFile)
-    # # cv2.waitKey(0)
-    # # focal_length = size[1]
-    # # center = (size[1] / 2, size[0] / 2)
-    # center = (yCenter, xCenter)
-    # focal_length = xCenter / np.tan(60 / 2 * np.pi / 180)
-    # camera_matrix = np.array(
-    #     [[focal_length, 0, center[0]],
-    #      [0, focal_length, center[1]],
-    #      [0, 0, 1]], dtype="double"
-    # )
-    # camera_distortion = np.zeros((4, 1))
-    #
-    # landmarks_2D = my_detector.returnLandmarks(inputFile, x, y, x + w, y + h, points_to_return=TRACKED_POINTS)
-    # # isFaceGood(inputFile,shape)
-    # # show the output image with the face detections + facial landmarks
-    # # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
-    #
-    # retval, rvec, tvec = cv2.solvePnP(landmarks_3D,
-    #                                   landmarks_2D,
-    #                                   camera_matrix, camera_distortion)
-    #
-    # axis = np.float32([[50, 0, 0],
-    #                    [0, 50, 0],
-    #                    [0, 0, 50]])
-    # imgpts, jac = cv2.projectPoints(axis, rvec, tvec, camera_matrix, camera_distortion)
-    # # for point in landmarks_2D:
-    # #     cv2.circle(inputFile, (point[0], point[1]), 2, (0, 0, 255), -1)
-    #
-    # # China face angles
-    # rvec_matrix = cv2.Rodrigues(rvec)[0]
-    #
-    # proj_matrix = np.hstack((rvec_matrix, tvec))
-    #
-    # eulerAngles = cv2.decomposeProjectionMatrix(proj_matrix)[6]
-    # pitch, yaw, roll = [math.radians(_) for _ in eulerAngles]
-    # pitch = math.degrees(math.asin(math.sin(pitch)))
-    # roll = -math.degrees(math.asin(math.sin(roll)))
-    # yaw = math.degrees(math.asin(math.sin(yaw)))
-    #
-    # file.writelines(str(pitch) + "\t" + str(roll) + "\t" + str(yaw) + "\t" + inputFilePath + "\n")
-    # # Drawing the three axis on the image frame.
-    # # The opencv colors are defined as BGR colors such as:
-    # # (a, b, c) >> Blue = a, Green = b and Red = c
-    # # Our axis/color convention is X=R, Y=G, Z=B
-    # sellion_xy = (landmarks_2D[7][0], landmarks_2D[7][1])
-    # rotate_degree = (str(int(roll)), str(int(pitch)), str(int(yaw)))
-    #
-    # cv2.putText(inputFile, ("yaw:" + '{:05.2f}').format(float(rotate_degree[0])), (10, 30 + (50)),
-    #             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), thickness=2, lineType=2)
-    #
-    # cv2.putText(inputFile, "pitch:" + ('{:05.2f}').format(float(rotate_degree[1])), (10, 30 + (100)),
-    #             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), thickness=2, lineType=2)
-    # cv2.putText(inputFile, ("roll:" + '{:05.2f}').format(float(rotate_degree[2])), (10, 30 + (150)),
-    #             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), thickness=2, lineType=2)
-    #
-    # cv2.line(inputFile, sellion_xy, tuple(imgpts[1].ravel()), (0, 255, 0), 3)  # GREEN
-    # cv2.line(inputFile, sellion_xy, tuple(imgpts[2].ravel()), (255, 0, 0), 3)  # BLUE
-    # cv2.line(inputFile, sellion_xy, tuple(imgpts[0].ravel()), (0, 0, 255), 3)  # RED
-    # for (x, y) in shape:
-    #     cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
-    # print(sellion_xy)
-    # inputFile = imutils.resize(inputFile, 1000)
-    # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
-    # # cv2.imshow("image", inputFile)
-    # # cv2.waitKey(0)
-    # #############################################################################ETAP 2
 
 
 def researchOrderer(alghoritmName, mode, values, clear):
@@ -530,7 +458,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
             badResult = 0
             ######################################################################################
             file.writelines("\n\npitch\t" + "\troll\t" "\tyaw\t" + "filename\n")
-            for i in range(1, 4, 1):
+            for i in range(1, 3, 1):
 
                 lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
                 # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
@@ -595,7 +523,7 @@ def firstFaceDetector(aData):
         fp14 = [member.shape[14][0], member.shape[14][1]]
         fp15 = [member.shape[15][0], member.shape[15][1]]
         fp16 = [member.shape[16][0], member.shape[16][1]]
-        fp17 = [member.shape[17][0], member.shape[17][1]]
+        fp17 = [member.shape[17][0], member.shape[17][1]]  # poczatek lewej brwi
         fp18 = [member.shape[18][0], member.shape[18][1]]
         fp19 = [member.shape[19][0], member.shape[19][1]]
         fp20 = [member.shape[20][0], member.shape[20][1]]
@@ -604,40 +532,40 @@ def firstFaceDetector(aData):
         fp23 = [member.shape[23][0], member.shape[23][1]]
         fp24 = [member.shape[24][0], member.shape[24][1]]
         fp25 = [member.shape[25][0], member.shape[25][1]]
-        fp26 = [member.shape[26][0], member.shape[26][1]]
+        fp26 = [member.shape[26][0], member.shape[26][1]]  # poczatek prawej brwi
         fp27 = [member.shape[27][0], member.shape[27][1]]
         fp28 = [member.shape[28][0], member.shape[28][1]]
-        fp29 = [member.shape[29][0], member.shape[29][1]]
-        fp30 = [member.shape[30][0], member.shape[30][1]]
+        fp29 = [member.shape[29][0], member.shape[29][1]]  # ponad czubkiemn nosa
+        fp30 = [member.shape[30][0], member.shape[30][1]]  # czubek nosa
         fp31 = [member.shape[31][0], member.shape[31][1]]
         fp32 = [member.shape[32][0], member.shape[32][1]]
         fp33 = [member.shape[33][0], member.shape[33][1]]
         fp34 = [member.shape[34][0], member.shape[34][1]]
         fp35 = [member.shape[35][0], member.shape[35][1]]
-        fp36 = [member.shape[36][0], member.shape[36][1]]
-        fp37 = [member.shape[37][0], member.shape[37][1]]
-        fp38 = [member.shape[38][0], member.shape[38][1]]
-        fp39 = [member.shape[39][0], member.shape[39][1]]
-        fp40 = [member.shape[40][0], member.shape[40][1]]
-        fp41 = [member.shape[41][0], member.shape[41][1]]
-        fp42 = [member.shape[42][0], member.shape[42][1]]
+        fp36 = [member.shape[36][0], member.shape[36][1]]  # lewy zewnętrzny kącik oka
+        fp37 = [member.shape[37][0], member.shape[37][1]]  # lewa gorna zewnetrzna zrenica
+        fp38 = [member.shape[38][0], member.shape[38][1]]  # lewa gorna wewnetrzna zrenica
+        fp39 = [member.shape[39][0], member.shape[39][1]]  # lewy wewnetrzny kącik oka
+        fp40 = [member.shape[40][0], member.shape[40][1]]  # lewa dolna zrenica wewnetrzna
+        fp41 = [member.shape[41][0], member.shape[41][1]]  # lewa dolna zrenica zewnetrzna
+        fp42 = [member.shape[42][0], member.shape[42][1]]  # prawy wewnetrzny kacik oka
         fp43 = [member.shape[43][0], member.shape[43][1]]
         fp44 = [member.shape[44][0], member.shape[44][1]]
-        fp45 = [member.shape[45][0], member.shape[45][1]]
-        fp46 = [member.shape[46][0], member.shape[46][1]]
-        fp47 = [member.shape[47][0], member.shape[47][1]]
-        fp48 = [member.shape[48][0], member.shape[48][1]]
-        fp49 = [member.shape[49][0], member.shape[49][1]]
+        fp45 = [member.shape[45][0], member.shape[45][1]]  # prawy zewnetrzny kacik oka
+        fp46 = [member.shape[46][0], member.shape[46][1]]  # zewnetrzna prawwa zrenica
+        fp47 = [member.shape[47][0], member.shape[47][1]]  # wewnetrzna prawa zrenica
+        fp48 = [member.shape[48][0], member.shape[48][1]]  # lewy kącik ust
+        fp49 = [member.shape[49][0], member.shape[49][1]]  # lewa warga zewnątrz góra
         fp50 = [member.shape[50][0], member.shape[50][1]]
-        fp51 = [member.shape[51][0], member.shape[51][1]]
+        fp51 = [member.shape[51][0], member.shape[51][1]]  # środek górnej wargi
         fp52 = [member.shape[52][0], member.shape[52][1]]
-        fp53 = [member.shape[53][0], member.shape[53][1]]
-        fp54 = [member.shape[54][0], member.shape[54][1]]
-        fp55 = [member.shape[55][0], member.shape[55][1]]
-        fp56 = [member.shape[56][0], member.shape[56][1]]
+        fp53 = [member.shape[53][0], member.shape[53][1]]  # prawa warga zewnątrz góra
+        fp54 = [member.shape[54][0], member.shape[54][1]]  # prawy kącik ust
+        fp55 = [member.shape[55][0], member.shape[55][1]]  # prawa warga zewnątrz dół
+        fp56 = [member.shape[56][0], member.shape[56][1]]  # środek dolnej wargi
         fp57 = [member.shape[57][0], member.shape[57][1]]
         fp58 = [member.shape[58][0], member.shape[58][1]]
-        fp59 = [member.shape[59][0], member.shape[59][1]]
+        fp59 = [member.shape[59][0], member.shape[59][1]]  # lewa warga dół zewnątrz
         fp60 = [member.shape[60][0], member.shape[60][1]]
         fp61 = [member.shape[61][0], member.shape[61][1]]
         fp62 = [member.shape[62][0], member.shape[62][1]]
@@ -647,10 +575,133 @@ def firstFaceDetector(aData):
         fp66 = [member.shape[66][0], member.shape[66][1]]
         fp67 = [member.shape[67][0], member.shape[67][1]]
 
-        # 
+        # wyznaczanie kwadratów :
+
+        # lewa fałdka nosa
+        pointThreeLineY = 0
+        pointThreeLineX = 0
+        upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (math.pow(fp49[1] - fp51[1], 2))))
+        lowerMounthMiddleLength = int(math.sqrt(math.pow(fp59[0] - fp56[0], 2) + (math.pow(fp59[1] - fp56[1], 2))))
+        if (upperMounthMiddleLength > lowerMounthMiddleLength):
+            pointThreeLineY = fp49[0]
+        else:
+            pointThreeLineY = fp59[0]
+
+        pointOne = [fp36[0], fp30[1]]
+
+        nearNew = int(math.sqrt(math.pow(pointOne[0] - fp36[0], 2) + (math.pow(pointOne[1] - fp36[1], 2))))
+        nearOld = int(
+            math.sqrt(math.pow(fp41[0] - fp40[0], 2) + (math.pow(fp41[1] - fp40[1], 2))))
+        if (nearNew < nearOld):
+            pointOne[1] += int(math.sqrt(math.pow(fp41[0] - fp40[0], 2) + (math.pow(fp41[1] - fp40[1], 2))))
+
+        pointW = pointThreeLineY - pointOne[0]
+
+        pointThreeLineX = int(fp59[1] + math.sqrt(math.pow(fp59[0] - fp49[0], 2) + (math.pow(fp59[1] - fp49[1], 2))))
+        pointH = pointThreeLineX - pointOne[1]
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 255, 0), 2)
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        leftNosePart = cropped
+        # cv2.imshow("nopper", member.alignedImage)
+        # cv2.waitKey(0)
+
+        # prawa fałdka nosa ##########################
+
+        pointThreeLineY = 0
+        pointThreeLineX = 0
+        upperMounthMiddleLength = int(math.sqrt(math.pow(fp53[0] - fp51[0], 2) + (math.pow(fp53[1] - fp51[1], 2))))
+        lowerMounthMiddleLength = int(math.sqrt(math.pow(fp55[0] - fp56[0], 2) + (math.pow(fp55[1] - fp56[1], 2))))
+        if (upperMounthMiddleLength > lowerMounthMiddleLength):
+            pointThreeLineY = fp53[0]
+        else:
+            pointThreeLineY = fp55[0]
+
+        pointOne = [fp45[0], fp30[1]]
+
+        nearNew = int(math.sqrt(math.pow(pointOne[0] - fp45[0], 2) + (math.pow(pointOne[1] - fp45[1], 2))))
+        nearOld = int(
+            math.sqrt(math.pow(fp46[0] - fp47[0], 2) + (math.pow(fp46[1] - fp47[1], 2))))
+        if (nearNew < nearOld):
+            pointOne[1] += int(math.sqrt(math.pow(fp46[0] - fp47[0], 2) + (math.pow(fp46[1] - fp47[1], 2))))
+
+        pointW = pointThreeLineY - pointOne[0]
+
+        pointThreeLineX = int(fp55[1] + math.sqrt(math.pow(fp55[0] - fp53[0], 2) + (math.pow(fp55[1] - fp53[1], 2))))
+        pointH = pointThreeLineX - pointOne[1]
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 255, 0), 2)
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        rightNosePart = cropped
+        # cv2.imshow("nopper", member.alignedImage)
+        # cv2.waitKey(0)
+
+        # lewy kącik ust 49 / 59
+        upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (math.pow(fp49[1] - fp51[1], 2))))
+        lowerMounthMiddleLength = int(math.sqrt(math.pow(fp59[0] - fp56[0], 2) + (math.pow(fp59[1] - fp56[1], 2))))
+        if (upperMounthMiddleLength > lowerMounthMiddleLength):
+            pointTwooLineX = fp49[0]
+
+        else:
+            pointTwooLineX = fp59[0]
+
+        pointTwo = [pointTwooLineX,
+                    fp49[1] - int(0.5 * (math.sqrt(math.pow(fp49[0] - fp59[0], 2) + (math.pow(fp49[1] - fp59[1], 2)))))]
+
+        pointH = int(2 * (math.sqrt(math.pow(fp49[0] - fp59[0], 2) + (math.pow(fp49[1] - fp59[1], 2)))))
+        # # wyznaczanie odleglosci w
+        middlepoint = [int((fp49[0] + fp59[0]) / 2), int((fp49[1] + fp59[1]) / 2)]
+        pointW = int(1.5 * (math.sqrt(math.pow(middlepoint[0] - fp48[0], 2) + (math.pow(middlepoint[1] - fp48[1], 2)))))
+        pointOne = [pointTwo[0] - pointW, pointTwo[1]]
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 140, 0), 2)
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        leftMounthEdge = cropped
         # cv2.imshow("nope", member.alignedImage)
         # 
         # cv2.waitKey(0)
+
+        # prawy kącik ust 53 / 59 ###############
+        upperMounthMiddleLength = int(math.sqrt(math.pow(fp53[0] - fp51[0], 2) + (math.pow(fp53[1] - fp51[1], 2))))
+        lowerMounthMiddleLength = int(math.sqrt(math.pow(fp55[0] - fp56[0], 2) + (math.pow(fp55[1] - fp56[1], 2))))
+        if (upperMounthMiddleLength < lowerMounthMiddleLength):
+            pointTwooLineX = fp53[0]
+
+        else:
+            pointTwooLineX = fp55[0]
+
+        pointOne = [pointTwooLineX,
+                    fp53[1] - int(0.5 * (math.sqrt(math.pow(fp53[0] - fp55[0], 2) + (math.pow(fp53[1] - fp55[1], 2)))))]
+
+        pointH = int(2 * (math.sqrt(math.pow(fp53[0] - fp55[0], 2) + (math.pow(fp53[1] - fp55[1], 2)))))
+        # # wyznaczanie odleglosci w
+        middlepoint = [int((fp53[0] + fp55[0]) / 2), int((fp53[1] + fp55[1]) / 2)]
+        pointW = int(1.5 * (math.sqrt(math.pow(middlepoint[0] - fp54[0], 2) + (math.pow(middlepoint[1] - fp54[1], 2)))))
+        # pointOne = [pointTwo[0] - pointW, pointTwo[1]]
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 140, 0), 2)
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        rightMounthEdge = cropped
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # lewy kącik oka ##################################
+
+        pointOne = fp17
+        pointW = fp36[0] - fp17[0]
+        pointH = int(1.5 * math.sqrt(math.pow(fp17[0] - fp36[0], 2) + (math.pow(fp17[1] - fp36[1], 2))))
+
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        leftEyeEdge = cropped
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 140, 170), 2)
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+        # lewy kącik oka ##################################
+
 
 
 
