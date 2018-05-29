@@ -343,7 +343,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
             for (x, y) in shape:
                 cv2.circle(faceAligned, (x, y), 1, (0, 0, 255), 5)
                 # cv2.imshow("Aligned", faceAligned)
-                # cv2.waitKey(0)
+                cv2.waitKey(0)
                 counter += 1
                 print(counter)
 
@@ -351,7 +351,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
             analysedData.append(DataStorage(inputFilePath, 0, inputFile, faceAligned, shape, False))
             print("analysedData: " + str(analysedData.__len__()))
 
-            cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceAligned)
+            # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceAligned)
 
             # cv2.imshow("Aligned", faceAligned)
             # cv2.waitKey(0)
@@ -500,6 +500,24 @@ def researchOrderer(alghoritmName, mode, values, clear):
         #         truePositive + trueNegative + falsePositive + falseNegative))
 
 
+def higestValue(entry):
+    values = entry
+    higest = values[0]
+    for x in range(1, len(entry), 1):
+        if (higest < values[x]):
+            higest = values[x]
+    return higest
+
+
+def lowestValue(entry):
+    values = entry
+    lowest = values[0]
+    for x in range(1, len(entry), 1):
+        if (lowest > values[x]):
+            lowest = values[x]
+    return lowest
+
+
 def firstFaceDetector(aData):
     for member in aData:
         member.printer()
@@ -533,8 +551,8 @@ def firstFaceDetector(aData):
         fp24 = [member.shape[24][0], member.shape[24][1]]
         fp25 = [member.shape[25][0], member.shape[25][1]]
         fp26 = [member.shape[26][0], member.shape[26][1]]  # poczatek prawej brwi
-        fp27 = [member.shape[27][0], member.shape[27][1]]
-        fp28 = [member.shape[28][0], member.shape[28][1]]
+        fp27 = [member.shape[27][0], member.shape[27][1]]  # pierwszy nosowy
+        fp28 = [member.shape[28][0], member.shape[28][1]]  # drugi nosowy
         fp29 = [member.shape[29][0], member.shape[29][1]]  # ponad czubkiemn nosa
         fp30 = [member.shape[30][0], member.shape[30][1]]  # czubek nosa
         fp31 = [member.shape[31][0], member.shape[31][1]]
@@ -589,10 +607,11 @@ def firstFaceDetector(aData):
 
         pointOne = [fp36[0], fp30[1]]
 
-        nearNew = int(math.sqrt(math.pow(pointOne[0] - fp36[0], 2) + (math.pow(pointOne[1] - fp36[1], 2))))
-        nearOld = int(
+        distanceBetweenNewPointandEyeEdge = int(
+            math.sqrt(math.pow(pointOne[0] - fp36[0], 2) + (math.pow(pointOne[1] - fp36[1], 2))))
+        distanceBetweenEyeErisEdges = int(
             math.sqrt(math.pow(fp41[0] - fp40[0], 2) + (math.pow(fp41[1] - fp40[1], 2))))
-        if (nearNew < nearOld):
+        if (distanceBetweenNewPointandEyeEdge < distanceBetweenEyeErisEdges):
             pointOne[1] += int(math.sqrt(math.pow(fp41[0] - fp40[0], 2) + (math.pow(fp41[1] - fp40[1], 2))))
 
         pointW = pointThreeLineY - pointOne[0]
@@ -606,29 +625,34 @@ def firstFaceDetector(aData):
         # cv2.imshow("nopper", member.alignedImage)
         # cv2.waitKey(0)
 
-        # prawa fałdka nosa ##########################
-
+        #####################################################
+        #####################################################
+        # prawa fałdka nosa #####################################################
+        #####################################################
+        #####################################################
+        poczatekKwadratuX = 0
         pointThreeLineY = 0
-        pointThreeLineX = 0
         upperMounthMiddleLength = int(math.sqrt(math.pow(fp53[0] - fp51[0], 2) + (math.pow(fp53[1] - fp51[1], 2))))
         lowerMounthMiddleLength = int(math.sqrt(math.pow(fp55[0] - fp56[0], 2) + (math.pow(fp55[1] - fp56[1], 2))))
         if (upperMounthMiddleLength > lowerMounthMiddleLength):
-            pointThreeLineY = fp53[0]
+            poczatekKwadratuX = fp53[0]
         else:
-            pointThreeLineY = fp55[0]
+            poczatekKwadratuX = fp55[0]
 
-        pointOne = [fp45[0], fp30[1]]
+        pointTwo = [fp45[0], fp30[1]]
 
-        nearNew = int(math.sqrt(math.pow(pointOne[0] - fp45[0], 2) + (math.pow(pointOne[1] - fp45[1], 2))))
-        nearOld = int(
+        distanceBetweenNewPointandEyeEdge = int(
+            math.sqrt(math.pow(pointTwo[0] - fp45[0], 2) + (math.pow(pointTwo[1] - fp45[1], 2))))
+        distanceBetweenEyeErisEdges = int(
             math.sqrt(math.pow(fp46[0] - fp47[0], 2) + (math.pow(fp46[1] - fp47[1], 2))))
-        if (nearNew < nearOld):
-            pointOne[1] += int(math.sqrt(math.pow(fp46[0] - fp47[0], 2) + (math.pow(fp46[1] - fp47[1], 2))))
+        if (distanceBetweenNewPointandEyeEdge < distanceBetweenEyeErisEdges):
+            pointTwo[1] += int(math.sqrt(math.pow(fp46[0] - fp47[0], 2) + (math.pow(fp46[1] - fp47[1], 2))))
 
-        pointW = pointThreeLineY - pointOne[0]
+        pointW = pointTwo[0] - poczatekKwadratuX
+        pointOne = [poczatekKwadratuX, pointTwo[1]]
 
-        pointThreeLineX = int(fp55[1] + math.sqrt(math.pow(fp55[0] - fp53[0], 2) + (math.pow(fp55[1] - fp53[1], 2))))
-        pointH = pointThreeLineX - pointOne[1]
+        pointThreeLineY = int(fp55[1] + math.sqrt(math.pow(fp55[0] - fp53[0], 2) + (math.pow(fp55[1] - fp53[1], 2))))
+        pointH = pointThreeLineY - pointOne[1]
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
                       (255, 255, 0), 2)
         cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
@@ -636,7 +660,7 @@ def firstFaceDetector(aData):
         # cv2.imshow("nopper", member.alignedImage)
         # cv2.waitKey(0)
 
-        # lewy kącik ust 49 / 59
+        ##################################### lewy kącik ust 49 / 59
         upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (math.pow(fp49[1] - fp51[1], 2))))
         lowerMounthMiddleLength = int(math.sqrt(math.pow(fp59[0] - fp56[0], 2) + (math.pow(fp59[1] - fp56[1], 2))))
         if (upperMounthMiddleLength > lowerMounthMiddleLength):
@@ -658,7 +682,7 @@ def firstFaceDetector(aData):
         cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         leftMounthEdge = cropped
         # cv2.imshow("nope", member.alignedImage)
-        # 
+        #
         # cv2.waitKey(0)
 
         # prawy kącik ust 53 / 59 ###############
@@ -700,9 +724,145 @@ def firstFaceDetector(aData):
         # cv2.imshow("nope", member.alignedImage)
         #
         # cv2.waitKey(0)
-        # lewy kącik oka ##################################
+        # prawy kącik oka ##################################
+        pointOne = [fp45[0], fp26[1]]
+        pointW = fp26[0] - pointOne[0]
+        pointH = int(1.5 * math.sqrt(math.pow(fp45[0] - fp26[0], 2) + (math.pow(fp45[1] - fp26[1], 2))))
 
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        rightEyeEdge = cropped
 
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 140, 255), 2)
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # lewa podpowieka ##################################
+        slope = math.atan2(fp30[1] - fp39[1], fp39[0] - fp30[0]) * (180.0 / math.pi)
+        pointOne = [fp36[0], 0]
+        pointW = int(math.sqrt(math.pow(fp39[0] - fp36[0], 2) + (math.pow(fp39[1] - fp36[1], 2))))
+        if (slope > 90):
+            slope = math.fabs(slope - 180)
+
+        if (slope < 22):
+            pointH = 2 * int(math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2))))
+
+        else:
+            pointH = int(1.5 * (math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2)))))
+
+        pointOne[1] = higestValue([fp36[1], fp40[1], fp39[1], fp41[1]])
+
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        leftUnderEye = cropped
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 240, 70), 2)
+
+        print("slope: " + str(slope))
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # prawa podpowieka ##################################
+        slope = math.atan2(fp30[1] - fp42[1], fp42[0] - fp30[0]) * (180.0 / math.pi)
+        pointOne = [fp42[0], 0]
+        pointW = int(math.sqrt(math.pow(fp42[0] - fp45[0], 2) + (math.pow(fp42[1] - fp45[1], 2))))
+
+        if (slope > 90):
+            slope = math.fabs(slope - 180)
+
+        if (slope < 22):
+            pointH = 2 * int(math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2))))
+
+        else:
+            pointH = int(1.5 * (math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2)))))
+
+        pointOne[1] = higestValue([fp42[1], fp46[1], fp47[1], fp45[1]])
+
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        rightUnderEye = cropped
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 240, 70), 2)
+
+        print("slope: " + str(slope))
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # Usta ###############
+
+        lowestMounthLevel = higestValue([fp48[1], fp54[1], fp55[1], fp56[1], fp57[1], fp58[1], fp59[1], fp60[1]])
+        highestMounthLevel = lowestValue([fp48[1], fp49[1], fp50[1], fp51[1], fp52[1], fp53[1], fp54[1]])
+        pointH = lowestMounthLevel - highestMounthLevel
+        pointW = fp54[0] - fp48[0]
+        pointOne = [fp48[0], highestMounthLevel]
+        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        mounthMainArea = cropped
+        mounthLeftPart = mounthMainArea[0:0 + pointH, 0:0 + int(pointW / 2)]
+        mounthRightPart = mounthMainArea[0:0 + pointH, int(pointW / 2):int(pointW / 2) + pointW]
+        # cv2.imshow("nope", mounthLeftPart)
+        # cv2.waitKey(0)
+        # cv2.imshow("nope", mounthRightPart)
+        # cv2.waitKey(0)
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 0, 60), 2)
+        # cv2.imshow("nope", member.alignedImage)
+        # cv2.waitKey(0)
+        ##########################################
+        ##########################################
+        # croppowanie  :)
+        ##########################################
+        ##########################################
+        # leftNosePart
+        rightNosePartREV = cv2.flip(rightNosePart, 1)
+        # leftMounthEdge
+        rightMounthEdgeREV = cv2.flip(rightMounthEdge, 1)
+        # leftEyeEdge
+        rightEyeEdgeREV = cv2.flip(rightEyeEdge, 1)
+        # leftUnderEye
+        rightUnderEyeREV = cv2.flip(rightUnderEye, 1)
+        # mounthLeftPart
+        mounthRightPartREV = cv2.flip(mounthRightPart, 1)
+
+        # cv2.imshow("nope", rightNosePart)
+        # cv2.waitKey(0)
+
+        cv2.imshow("nope", member.alignedImage)
+        cv2.waitKey(0)
+        cv2.imshow("1",
+                   leftNosePart)
+        cv2.waitKey(0)
+        cv2.imshow("2",
+                   rightNosePartREV)
+        cv2.waitKey(0)
+        cv2.imshow("3",
+                   leftMounthEdge)
+        cv2.waitKey(0)
+        cv2.imshow("4",
+                   rightMounthEdgeREV)
+        cv2.waitKey(0)
+        cv2.imshow("5",
+                   leftEyeEdge)
+        cv2.waitKey(0)
+        cv2.imshow("6",
+                   rightEyeEdgeREV)
+        cv2.waitKey(0)
+        cv2.imshow("7",
+                   leftUnderEye)
+        cv2.waitKey(0)
+        cv2.imshow("8",
+                   rightUnderEyeREV)
+        cv2.waitKey(0)
+        cv2.imshow("9",
+                   mounthLeftPart)
+        cv2.waitKey(0)
+        cv2.imshow("10",
+                   mounthRightPartREV)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 
 researchOrderer("HOG", "HEALTHY", 0, 0)
