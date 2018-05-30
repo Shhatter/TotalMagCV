@@ -10,5 +10,26 @@ class DataStorage:
         self.shape = shape
         self.isPositive = isPositive
 
+    def addImages(self, leftNosePart
+                  , rightNosePartREV
+                  , leftMounthEdge
+                  , rightMounthEdgeREV
+                  , leftEyeEdge
+                  , rightEyeEdgeREV
+                  , leftUnderEye
+                  , rightUnderEyeREV
+                  , mounthLeftPart
+                  , mounthRightPartREV):
+        self.leftNosePart = leftNosePart
+        self.rightNosePartREV = rightNosePartREV
+        self.leftMounthEdge = leftMounthEdge
+        self.rightMounthEdgeREV = rightMounthEdgeREV
+        self.leftEyeEdge = leftEyeEdge
+        self.rightEyeEdgeREV = rightEyeEdgeREV
+        self.leftUnderEye = leftUnderEye
+        self.rightUnderEyeREV = rightUnderEyeREV
+        self.mounthLeftPart = mounthLeftPart
+        self.mounthRightPartREV = mounthRightPartREV
+
     def printer(self):
         print(self.fileName)

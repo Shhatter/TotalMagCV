@@ -13,6 +13,9 @@ import os
 import math
 from imutils import face_utils
 from imutils.face_utils import FaceAligner
+import matplotlib.pyplot as plt
+
+
 from mtcnn.mtcnn import MTCNN
 from time import sleep
 import argparse
@@ -387,7 +390,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print(image)
                 print("Iteracja: " + str(counter))
                 counter += 1
-                dlibFaceDetector(image, pathGood, pathBad)
+                # dlibFaceDetector(image, pathGood, pathBad)
                 if printDetails:
                     printDetails = False
             printDetails = True
@@ -458,7 +461,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
             badResult = 0
             ######################################################################################
             file.writelines("\n\npitch\t" + "\troll\t" "\tyaw\t" + "filename\n")
-            for i in range(1, 3, 1):
+            for i in range(7, 9, 1):
 
                 lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
                 # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
@@ -484,7 +487,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    dlibFaceDetector(image, pathBadBad, pathBad)
+                    # dlibFaceDetector(image, pathBadBad, pathBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
@@ -518,7 +521,54 @@ def lowestValue(entry):
     return lowest
 
 
+def toGray(colorimg):
+    gray = cv2.cvtColor(colorimg, cv2.COLOR_BGR2GRAY)
+    return gray
+
+
+def resizeImagestToSameLevel(image1, image2):
+    x1height, x1width = image1.shape[:2]
+    x2height, x2width = image2.shape[:2]
+    if ((x1height * x1width) > (x2height * x2width)):
+        crop = cv2.resize(image1, (x2width, x2height), interpolation=cv2.INTER_AREA)
+
+        # imutils.resize(image1, x2width, x2height)
+        image1 = crop
+    else:
+        # cropp = imutils.resize(image2, x1width, x1height)
+        crop = cv2.resize(image2, (x1width, x1height), interpolation=cv2.INTER_AREA)
+        image2 = crop
+
+    return image1, image2
+
+
+def gen_sift_features(gray_img):
+    sift = cv2.xfeatures2d.SIFT_create()
+    # kp is the keypoints
+    #
+    # desc is the SIFT descriptors, they're 128-dimensional vectors
+    # that we can use for our final features
+    kp, desc = sift.detectAndCompute(gray_img, None)
+    return kp, desc
+
+
+def show_sift_features(gray_img, color_img, kp):
+    cv2.imshow("nopper", cv2.drawKeypoints(gray_img, kp, color_img.copy()))
+    cv2.waitKey(0)
+
+
 def firstFaceDetector(aData):
+    global getXTime
+    getTimeFolderPersons = datetime.datetime.now()
+    pathCore = personDefPath + getXTime + " ANALYZED DATA " + "\\"
+    getXTime = str(getTimeFolderPersons.strftime("%Y-%m-%d - %H-%M-%S"))
+    pathCore = pathCore.replace(":", " ")
+    pathGood = pathCore + "Dobre\\"
+    pathBad = pathCore + "Zle\\"
+    os.mkdir(pathCore)
+    os.mkdir(pathGood)
+    os.mkdir(pathBad)
+
     for member in aData:
         member.printer()
         # member.alignedImage
@@ -813,7 +863,7 @@ def firstFaceDetector(aData):
         # cv2.waitKey(0)
         ##########################################
         ##########################################
-        # croppowanie  :)
+        # rotowanie  :)
         ##########################################
         ##########################################
         # leftNosePart
@@ -826,47 +876,127 @@ def firstFaceDetector(aData):
         rightUnderEyeREV = cv2.flip(rightUnderEye, 1)
         # mounthLeftPart
         mounthRightPartREV = cv2.flip(mounthRightPart, 1)
+        ##########################################
+        ##########################################
+        # dobieranie rozmiaru   :)
+        ##########################################
+        ##########################################
 
-        # cv2.imshow("nope", rightNosePart)
+        leftNosePart, rightNosePartREV = resizeImagestToSameLevel(leftNosePart, rightNosePartREV)
+        leftMounthEdge, rightMounthEdgeREV = resizeImagestToSameLevel(leftMounthEdge, rightMounthEdgeREV)
+        leftEyeEdge, rightEyeEdgeREV = resizeImagestToSameLevel(leftEyeEdge, rightEyeEdgeREV)
+        leftUnderEye, rightUnderEyeREV = resizeImagestToSameLevel(leftUnderEye, rightUnderEyeREV)
+        mounthLeftPart, mounthRightPartREV = resizeImagestToSameLevel(mounthLeftPart, mounthRightPartREV)
+
+        leftNosePartGRAY = toGray(leftNosePart)
+        rightNosePartREVGRAY = toGray(rightNosePartREV)
+        leftMounthEdgeGRAY = toGray(leftMounthEdge)
+        rightMounthEdgeREVGRAY = toGray(rightMounthEdgeREV)
+        leftEyeEdgeGRAY = toGray(leftEyeEdge)
+        rightEyeEdgeREVGRAY = toGray(rightEyeEdgeREV)
+        leftUnderEyeGRAY = toGray(leftUnderEye)
+        rightUnderEyeREVGRAY = toGray(rightUnderEyeREV)
+        mounthLeftPartGRAY = toGray(mounthLeftPart)
+        mounthRightPartREVGRAY = toGray(mounthRightPartREV)
+
+        leftNosePartKP, leftNosePartDESC = gen_sift_features(leftNosePartGRAY)
+        rightNosePartREVKP, rightNosePartREVDESC = gen_sift_features(rightNosePartREVGRAY)
+        leftMounthEdgeKP, leftMounthEdgeDESC = gen_sift_features(leftMounthEdgeGRAY)
+        rightMounthEdgeREVKP, rightMounthEdgeREVDESC = gen_sift_features(rightMounthEdgeREVGRAY)
+        leftEyeEdgeKP, leftEyeEdgeDESC = gen_sift_features(leftEyeEdgeGRAY)
+        rightEyeEdgeREVKP, rightEyeEdgeREVDESC = gen_sift_features(rightEyeEdgeREVGRAY)
+        leftUnderEyeKP, leftUnderEyeDESC = gen_sift_features(leftUnderEyeGRAY)
+        rightUnderEyeREVKP, rightUnderEyeREVDESC = gen_sift_features(rightUnderEyeREVGRAY)
+        mounthLeftPartKP, mounthLeftPartDESC = gen_sift_features(mounthLeftPartGRAY)
+        mounthRightPartREVKP, mounthRightPartREVDESC = gen_sift_features(mounthRightPartREVGRAY)
+
+        show_sift_features(leftNosePartGRAY, leftNosePart, leftNosePartKP)
+        show_sift_features(rightNosePartREVGRAY, rightNosePartREV, rightNosePartREVKP)
+        show_sift_features(leftMounthEdgeGRAY, leftMounthEdge, leftMounthEdgeKP)
+        show_sift_features(rightMounthEdgeREVGRAY, rightMounthEdgeREV, rightMounthEdgeREVKP)
+        show_sift_features(leftEyeEdgeGRAY, leftEyeEdge, leftEyeEdgeKP)
+        show_sift_features(rightEyeEdgeREVGRAY, rightEyeEdgeREV, rightEyeEdgeREVKP)
+        show_sift_features(leftUnderEyeGRAY, leftUnderEye, leftUnderEyeKP)
+        show_sift_features(rightUnderEyeREVGRAY, rightUnderEyeREV, rightUnderEyeREVKP)
+        show_sift_features(mounthLeftPartGRAY, mounthLeftPart, mounthLeftPartKP)
+        show_sift_features(mounthRightPartREVGRAY, mounthRightPartREV, mounthRightPartREVKP)
+
+        # x1height, x1width = leftNosePart.shape[:2]
+        # x2height, x2width = rightNosePartREV.shape[:2]
+        # if (x1height * x1width > x2height * x2width):
+        #     leftNosePart = imutils.resize(leftNosePart, x2width, x2height)
+        # else:
+        #     rightNosePartREV = imutils.resize(rightNosePartREV, x1width, x1height)
+        #
+        # x1height, x1width = leftMounthEdge.shape[:2]
+        # x2height, x2width = rightMounthEdgeREV.shape[:2]
+        # if (x1height * x1width > x2height * x2width):
+        #     leftMounthEdge = imutils.resize(leftMounthEdge, x2width, x2height)
+        # else:
+        #     rightMounthEdgeREV = imutils.resize(rightMounthEdgeREV, x1width, x1height)
+        #
+        # x1height, x1width = leftEyeEdge.shape[:2]
+        # x2height, x2width = rightEyeEdgeREV.shape[:2]
+        # if (x1height * x1width > x2height * x2width):
+        #     leftEyeEdge = imutils.resize(leftEyeEdge, x2width, x2height)
+        # else:
+        #     rightEyeEdgeREV = imutils.resize(rightEyeEdgeREV, x1width, x1height)
+        #
+        # x1height, x1width = leftEyeEdge.shape[:2]
+        # x2height, x2width = rightEyeEdgeREV.shape[:2]
+        # if (x1height * x1width > x2height * x2width):
+        #     leftEyeEdge = imutils.resize(leftEyeEdge, x2width, x2height)
+        # else:
+        #     rightEyeEdgeREV = imutils.resize(rightEyeEdgeREV, x1width, x1height)
+        #
+        # x1height, x1width = leftUnderEye.shape[:2]
+        # x2height, x2width = rightUnderEyeREV.shape[:2]
+        # if (x1height * x1width > x2height * x2width):
+        #     leftUnderEye = imutils.resize(leftUnderEye, x2width, x2height)
+        # else:
+        #     rightUnderEyeREV = imutils.resize(rightUnderEyeREV, x1width, x1height)
+        #
+        # x1height, x1width = mounthLeftPart.shape[:2]
+        # x2height, x2width = mounthRightPartREV.shape[:2]
+        # if (x1height * x1width > x2height * x2width):
+        #     mounthLeftPart = imutils.resize(mounthLeftPart, x2width, x2height)
+        # else:
+        #     mounthRightPartREV = imutils.resize(mounthRightPartREV, x1width, x1height)
+
+        # cv2.imshow("1",
+        #            leftNosePart)
         # cv2.waitKey(0)
-
-        cv2.imshow("nope", member.alignedImage)
-        cv2.waitKey(0)
-        cv2.imshow("1",
-                   leftNosePart)
-        cv2.waitKey(0)
-        cv2.imshow("2",
-                   rightNosePartREV)
-        cv2.waitKey(0)
-        cv2.imshow("3",
-                   leftMounthEdge)
-        cv2.waitKey(0)
-        cv2.imshow("4",
-                   rightMounthEdgeREV)
-        cv2.waitKey(0)
-        cv2.imshow("5",
-                   leftEyeEdge)
-        cv2.waitKey(0)
-        cv2.imshow("6",
-                   rightEyeEdgeREV)
-        cv2.waitKey(0)
-        cv2.imshow("7",
-                   leftUnderEye)
-        cv2.waitKey(0)
-        cv2.imshow("8",
-                   rightUnderEyeREV)
-        cv2.waitKey(0)
-        cv2.imshow("9",
-                   mounthLeftPart)
-        cv2.waitKey(0)
-        cv2.imshow("10",
-                   mounthRightPartREV)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # cv2.imshow("2",
+        #            rightNosePartREV)
+        # cv2.waitKey(0)
+        # cv2.imshow("3",
+        #            leftMounthEdge)
+        # cv2.waitKey(0)
+        # cv2.imshow("4",
+        #            rightMounthEdgeREV)
+        # cv2.waitKey(0)
+        # cv2.imshow("5",
+        #            leftEyeEdge)
+        # cv2.waitKey(0)
+        # cv2.imshow("6",
+        #            rightEyeEdgeREV)
+        # cv2.waitKey(0)
+        # cv2.imshow("7",
+        #            leftUnderEye)
+        # cv2.waitKey(0)
+        # cv2.imshow("8",
+        #            rightUnderEyeREV)
+        # cv2.waitKey(0)
+        # cv2.imshow("9",
+        #            mounthLeftPart)
+        # cv2.waitKey(0)
+        # cv2.imshow("10",
+        #            mounthRightPartREV)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+        # cv2.imwrite(pathGood + pathlib.Path(member.fileName).name, member.alignedImage)
 
 
 researchOrderer("HOG", "HEALTHY", 0, 0)
-
 firstFaceDetector(analysedData)
-
 file.close()
