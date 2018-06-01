@@ -13,16 +13,27 @@ import os
 import math
 from imutils import face_utils
 from imutils.face_utils import FaceAligner
-import matplotlib.pyplot as plt
+from skimage.measure import structural_similarity as ssim
 
+from skimage import exposure
+from PIL import Image
+
+from skimage import exposure
+
+import matplotlib.pyplot as plt
 
 from mtcnn.mtcnn import MTCNN
 from time import sleep
 import argparse
 
 from skimage import io
-
+import matplotlib.pyplot as plt
+from skimage.feature import hog
+from skimage import data, exposure
 from dataStorage import DataStorage
+from skimage import exposure
+from skimage import feature
+from skimage import img_as_ubyte
 
 ###STAŁE
 predictor_path = "landmark/shape_predictor_68_face_landmarks.dat"
@@ -79,42 +90,6 @@ else:
     file.writelines(
         "\n##################################################################### " + "\nTest : " + getTime + "\n\n")
 
-# paczka koordynatów dla wizualizacji 3D
-# coordinates of ROS (robotic operative system)
-P3D_RIGHT_SIDE = np.float32([-100.0, -77.5, -5.0])  # 0
-P3D_GONION_RIGHT = np.float32([-110.0, -77.5, -85.0])  # 4
-P3D_MENTON = np.float32([0.0, 0.0, -122.7])  # 8
-P3D_GONION_LEFT = np.float32([-110.0, 77.5, -85.0])  # 12
-P3D_LEFT_SIDE = np.float32([-100.0, 77.5, -5.0])  # 16
-P3D_FRONTAL_BREADTH_RIGHT = np.float32([-20.0, -56.1, 10.0])  # 17
-P3D_FRONTAL_BREADTH_LEFT = np.float32([-20.0, 56.1, 10.0])  # 26
-P3D_SELLION = np.float32([0.0, 0.0, 0.0])  # 27
-P3D_NOSE = np.float32([21.1, 0.0, -48.0])  # 30
-P3D_SUB_NOSE = np.float32([5.0, 0.0, -52.0])  # 33
-P3D_RIGHT_EYE = np.float32([-20.0, -65.5, -5.0])  # 36
-P3D_RIGHT_TEAR = np.float32([-10.0, -40.5, -5.0])  # 39
-P3D_LEFT_TEAR = np.float32([-10.0, 40.5, -5.0])  # 42
-P3D_LEFT_EYE = np.float32([-20.0, 65.5, -5.0])  # 45
-# P3D_LIP_RIGHT = np.float32([-20.0, 65.5,-5.0]) #48
-# P3D_LIP_LEFT = np.float32([-20.0, 65.5,-5.0]) #54
-P3D_STOMION = np.float32([10.0, 0.0, -75.0])  # 62
-TRACKED_POINTS = (0, 4, 8, 12, 16, 17, 26, 27, 30, 33, 36, 39, 42, 45, 62)
-
-landmarks_3D = np.float32([P3D_RIGHT_SIDE,
-                           P3D_GONION_RIGHT,
-                           P3D_MENTON,
-                           P3D_GONION_LEFT,
-                           P3D_LEFT_SIDE,
-                           P3D_FRONTAL_BREADTH_RIGHT,
-                           P3D_FRONTAL_BREADTH_LEFT,
-                           P3D_SELLION,
-                           P3D_NOSE,
-                           P3D_SUB_NOSE,
-                           P3D_RIGHT_EYE,
-                           P3D_RIGHT_TEAR,
-                           P3D_LEFT_TEAR,
-                           P3D_LEFT_EYE,
-                           P3D_STOMION])
 
 
 def dlibFaceDetector(inputFilePath, goodPath, badPath):
@@ -274,10 +249,10 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         rSideLength = math.sqrt(math.pow(fp54[0] - fp12[0], 2) + (math.pow(fp54[1] - fp12[1], 2)))
         if (((lSideLength * 0.666) > rSideLength) or ((rSideLength * 0.666) > lSideLength)):
             grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
-            for (x, y) in shape:
-                cv2.circle(grayImage, (x, y), 1, (0, 0, 255), 5)
+            # for (x, y) in shape:
+            #     cv2.circle(grayImage, (x, y), 1, (0, 0, 255), 5)
 
-            cv2.circle(grayImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
+            # cv2.circle(grayImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
             cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, grayImage)
         else:
             grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
@@ -341,16 +316,16 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
                     h = height - 1
             xCenter = (int)((w / 2) + x)
             yCenter = (int)((h / 2) + y)
-            cv2.rectangle(faceAligned, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # cv2.rectangle(faceAligned, (x, y), (x + w, y + h), (0, 255, 0), 2)
             counter = 0
-            for (x, y) in shape:
-                cv2.circle(faceAligned, (x, y), 1, (0, 0, 255), 5)
-                # cv2.imshow("Aligned", faceAligned)
-                cv2.waitKey(0)
-                counter += 1
-                print(counter)
+            # for (x, y) in shape:
+            #     cv2.circle(faceAligned, (x, y), 1, (0, 0, 255), 5)
+            # cv2.imshow("Aligned", faceAligned)
+            # cv2.waitKey(0)
+            # counter += 1
+            # print(counter)
 
-            cv2.circle(faceAligned, (xCenter, yCenter), 1, (200, 255, 23), 5)
+            # cv2.circle(faceAligned, (xCenter, yCenter), 1, (200, 255, 23), 5)
             analysedData.append(DataStorage(inputFilePath, 0, inputFile, faceAligned, shape, False))
             print("analysedData: " + str(analysedData.__len__()))
 
@@ -571,6 +546,8 @@ def firstFaceDetector(aData):
 
     for member in aData:
         member.printer()
+
+        cleanImage = member.alignedImage.copy()
         # member.alignedImage
         height, width = member.alignedImage.shape[:2]
         print(height, width)
@@ -668,9 +645,10 @@ def firstFaceDetector(aData):
 
         pointThreeLineX = int(fp59[1] + math.sqrt(math.pow(fp59[0] - fp49[0], 2) + (math.pow(fp59[1] - fp49[1], 2))))
         pointH = pointThreeLineX - pointOne[1]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
                       (255, 255, 0), 2)
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         leftNosePart = cropped
         # cv2.imshow("nopper", member.alignedImage)
         # cv2.waitKey(0)
@@ -703,9 +681,10 @@ def firstFaceDetector(aData):
 
         pointThreeLineY = int(fp55[1] + math.sqrt(math.pow(fp55[0] - fp53[0], 2) + (math.pow(fp55[1] - fp53[1], 2))))
         pointH = pointThreeLineY - pointOne[1]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
                       (255, 255, 0), 2)
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         rightNosePart = cropped
         # cv2.imshow("nopper", member.alignedImage)
         # cv2.waitKey(0)
@@ -727,9 +706,10 @@ def firstFaceDetector(aData):
         middlepoint = [int((fp49[0] + fp59[0]) / 2), int((fp49[1] + fp59[1]) / 2)]
         pointW = int(1.5 * (math.sqrt(math.pow(middlepoint[0] - fp48[0], 2) + (math.pow(middlepoint[1] - fp48[1], 2)))))
         pointOne = [pointTwo[0] - pointW, pointTwo[1]]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
                       (255, 140, 0), 2)
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         leftMounthEdge = cropped
         # cv2.imshow("nope", member.alignedImage)
         #
@@ -752,9 +732,10 @@ def firstFaceDetector(aData):
         middlepoint = [int((fp53[0] + fp55[0]) / 2), int((fp53[1] + fp55[1]) / 2)]
         pointW = int(1.5 * (math.sqrt(math.pow(middlepoint[0] - fp54[0], 2) + (math.pow(middlepoint[1] - fp54[1], 2)))))
         # pointOne = [pointTwo[0] - pointW, pointTwo[1]]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
                       (255, 140, 0), 2)
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         rightMounthEdge = cropped
         # cv2.imshow("nope", member.alignedImage)
         #
@@ -766,7 +747,7 @@ def firstFaceDetector(aData):
         pointW = fp36[0] - fp17[0]
         pointH = int(1.5 * math.sqrt(math.pow(fp17[0] - fp36[0], 2) + (math.pow(fp17[1] - fp36[1], 2))))
 
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         leftEyeEdge = cropped
 
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
@@ -779,7 +760,7 @@ def firstFaceDetector(aData):
         pointW = fp26[0] - pointOne[0]
         pointH = int(1.5 * math.sqrt(math.pow(fp45[0] - fp26[0], 2) + (math.pow(fp45[1] - fp26[1], 2))))
 
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         rightEyeEdge = cropped
 
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
@@ -803,7 +784,7 @@ def firstFaceDetector(aData):
 
         pointOne[1] = higestValue([fp36[1], fp40[1], fp39[1], fp41[1]])
 
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         leftUnderEye = cropped
 
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
@@ -830,7 +811,7 @@ def firstFaceDetector(aData):
 
         pointOne[1] = higestValue([fp42[1], fp46[1], fp47[1], fp45[1]])
 
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         rightUnderEye = cropped
 
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
@@ -848,7 +829,7 @@ def firstFaceDetector(aData):
         pointH = lowestMounthLevel - highestMounthLevel
         pointW = fp54[0] - fp48[0]
         pointOne = [fp48[0], highestMounthLevel]
-        cropped = member.alignedImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
         mounthMainArea = cropped
         mounthLeftPart = mounthMainArea[0:0 + pointH, 0:0 + int(pointW / 2)]
         mounthRightPart = mounthMainArea[0:0 + pointH, int(pointW / 2):int(pointW / 2) + pointW]
@@ -899,6 +880,87 @@ def firstFaceDetector(aData):
         mounthLeftPartGRAY = toGray(mounthLeftPart)
         mounthRightPartREVGRAY = toGray(mounthRightPartREV)
 
+        analysedParts = [[leftNosePartGRAY, rightNosePartREVGRAY], [leftMounthEdgeGRAY, rightMounthEdgeREVGRAY],
+                         [leftEyeEdgeGRAY, rightEyeEdgeREVGRAY], [leftUnderEyeGRAY, rightUnderEyeREVGRAY],
+                         [mounthLeftPartGRAY, mounthRightPartREVGRAY]]
+
+        for singleComparasion in analysedParts:
+            # singleComparasion[0] = cv2.equalizeHist(singleComparasion[0])
+            # singleComparasion[1] = cv2.equalizeHist(singleComparasion[1])
+            #
+            aa = exposure.equalize_adapthist(singleComparasion[0], clip_limit=0.03)
+            bb = exposure.equalize_adapthist(singleComparasion[1], clip_limit=0.03)
+            # th1 = cv2.adaptiveThreshold(singleComparasion[0], 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+            #                            cv2.THRESH_BINARY, 11, 2)
+            # th2 = cv2.adaptiveThreshold(singleComparasion[1], 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+            #                            cv2.THRESH_BINARY, 11, 2)
+            res = np.hstack((singleComparasion[0], singleComparasion[1]))
+            image = cv2.GaussianBlur(res, (5, 5), 0)
+
+            singleComparasion[0]
+            cv2.normalize()
+
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            cl1 = clahe.apply(res)
+            cv2.imshow("argumented", cl1)
+            cv2.imshow("normal", res)
+
+            cv2.waitKey(0)
+
+            aaa = cv2.Laplacian(res, cv2.CV_64F)
+            sobelx = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
+            sobely = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
+            sobelCombined = cv2.bitwise_or(sobelx, sobely)
+
+            # cv2.imshow("arfg",aaa)
+            # cv2.waitKey(0)
+            # cv2.imshow("arfg",sobelx)
+            # cv2.waitKey(0)
+            # cv2.imshow("Blurred", image)
+            # cv2.waitKey(0)
+            #
+            # cv2.imshow("arfg",sobelCombined)
+            # cv2.waitKey(0)
+
+            # edges1 = feature.canny(aa,sigma=2)
+            # edges2 = feature.canny(bb,sigma=2)
+            # # res2 = np.hstack((edges1, edges2))
+            # cv_image1 = img_as_ubyte(edges1)
+            # cv_image2 = img_as_ubyte(edges2)
+            # res2 = np.hstack((cv_image1, cv_image2))
+            # cv2.imshow("dupa",res2)
+            # # cv2.imshow("arfg",res2)
+            # cv2.waitKey(0)
+
+            # fd, hogImage = hog(cleanImage, orientations=9, pixels_per_cell=(3, 3),
+            #             #                    cells_per_block=(1, 1), visualise=True, feature_vector=True, transform_sqrt=True)
+            #             #
+            #             # fd2, hogImage2 = hog(singleComparasion[1], orientations=9, pixels_per_cell=(3, 3),
+            #             #                      cells_per_block=(1, 1), visualise=True, feature_vector=True, transform_sqrt=True)
+
+            # # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), sharex=True, sharey=True)
+            # #
+            # # ax1.axis('off')
+            # # ax1.imshow(singleComparasion[0], cmap=plt.cm.gray)
+            # # ax1.set_title('Input image')
+            # # hog_image_rescaled = exposure.rescale_intensity(hogImage, in_range=(0, 10))
+            # # ax2.axis('off')
+            # # ax2.imshow(hog_image_rescaled, cmap=plt.cm.gray)
+            # # ax2.set_title('Histogram of Oriented Gradients')
+            # a = []
+            # for x in fd :
+            #   a.append(int(180*x))
+            # print("###############################################################")
+            # # print(len(fd))
+            # # print(len(fd2))
+            # # plt.hist(fd)
+            # # # plt.hist(fd, bins= 9, normed =True, alpha =0.5,histtype='stepfilled', color='steelblue',edgecolor='none')
+            # # plt.show()
+            # plt.hist(a)
+            # plt.show()
+            # cv2.imshow("clean image ", cleanImage)
+            # cv2.waitKey(0)
+
         leftNosePartKP, leftNosePartDESC = gen_sift_features(leftNosePartGRAY)
         rightNosePartREVKP, rightNosePartREVDESC = gen_sift_features(rightNosePartREVGRAY)
         leftMounthEdgeKP, leftMounthEdgeDESC = gen_sift_features(leftMounthEdgeGRAY)
@@ -910,16 +972,16 @@ def firstFaceDetector(aData):
         mounthLeftPartKP, mounthLeftPartDESC = gen_sift_features(mounthLeftPartGRAY)
         mounthRightPartREVKP, mounthRightPartREVDESC = gen_sift_features(mounthRightPartREVGRAY)
 
-        show_sift_features(leftNosePartGRAY, leftNosePart, leftNosePartKP)
-        show_sift_features(rightNosePartREVGRAY, rightNosePartREV, rightNosePartREVKP)
-        show_sift_features(leftMounthEdgeGRAY, leftMounthEdge, leftMounthEdgeKP)
-        show_sift_features(rightMounthEdgeREVGRAY, rightMounthEdgeREV, rightMounthEdgeREVKP)
-        show_sift_features(leftEyeEdgeGRAY, leftEyeEdge, leftEyeEdgeKP)
-        show_sift_features(rightEyeEdgeREVGRAY, rightEyeEdgeREV, rightEyeEdgeREVKP)
-        show_sift_features(leftUnderEyeGRAY, leftUnderEye, leftUnderEyeKP)
-        show_sift_features(rightUnderEyeREVGRAY, rightUnderEyeREV, rightUnderEyeREVKP)
-        show_sift_features(mounthLeftPartGRAY, mounthLeftPart, mounthLeftPartKP)
-        show_sift_features(mounthRightPartREVGRAY, mounthRightPartREV, mounthRightPartREVKP)
+        # show_sift_features(leftNosePartGRAY, leftNosePart, leftNosePartKP)
+        # show_sift_features(rightNosePartREVGRAY, rightNosePartREV, rightNosePartREVKP)
+        # show_sift_features(leftMounthEdgeGRAY, leftMounthEdge, leftMounthEdgeKP)
+        # show_sift_features(rightMounthEdgeREVGRAY, rightMounthEdgeREV, rightMounthEdgeREVKP)
+        # show_sift_features(leftEyeEdgeGRAY, leftEyeEdge, leftEyeEdgeKP)
+        # show_sift_features(rightEyeEdgeREVGRAY, rightEyeEdgeREV, rightEyeEdgeREVKP)
+        # show_sift_features(leftUnderEyeGRAY, leftUnderEye, leftUnderEyeKP)
+        # show_sift_features(rightUnderEyeREVGRAY, rightUnderEyeREV, rightUnderEyeREVKP)
+        # show_sift_features(mounthLeftPartGRAY, mounthLeftPart, mounthLeftPartKP)
+        # show_sift_features(mounthRightPartREVGRAY, mounthRightPartREV, mounthRightPartREVKP)
 
         # x1height, x1width = leftNosePart.shape[:2]
         # x2height, x2width = rightNosePartREV.shape[:2]
