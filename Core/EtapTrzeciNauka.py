@@ -572,7 +572,7 @@ def show_sift_features(gray_img, color_img, kp):
 def preprecessCorrectedFaces(aData, isSickCollection):
     global getXTime
     getTimeFolderPersons = datetime.datetime.now()
-    pathCore = personDefPath + getXTime + " ANALYZED DATA " + "\\"
+    pathCore = personDefPath + getXTime + " EXTRACTED DATA " + "\\"
     getXTime = str(getTimeFolderPersons.strftime("%Y-%m-%d - %H-%M-%S"))
     pathCore = pathCore.replace(":", " ")
     pathGood = pathCore + "Dobre\\"
