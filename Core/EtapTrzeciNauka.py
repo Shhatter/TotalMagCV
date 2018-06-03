@@ -14,6 +14,7 @@ import math
 from imutils import face_utils
 from imutils.face_utils import FaceAligner
 from skimage.measure import compare_ssim as ssim
+from skimage.color import rgb2gray
 import json
 
 from skimage import exposure
@@ -40,9 +41,6 @@ from skimage import img_as_ubyte
 predictor_path = "landmark/shape_predictor_68_face_landmarks.dat"
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(predictor_path)
-# net = cv2.dnn.readNetFromCaffe("landmark/deploy.prototxt.txt", "landmark/res10_300x300_ssd_iter_140000.caffemodel")
-mmod_path = "landmark/mmod_human_face_detector.dat"
-cnnFaceDetector = dlib.cnn_face_detection_model_v1("landmark/mmod_human_face_detector.dat")
 
 # Core/landmark/vgg_face_caffe/vgg_face_caffe/VGG_FACE_deploy.prototxt
 # net = cv2.dnn.readNetFromCaffe("landmark/PAM_frontal_AlexNet/PAM_frontal_deploy.prototxt.txt", "landmark/PAM_frontal_AlexNet/snap__iter_100000.caffemodel")
@@ -97,8 +95,14 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         file.writelines(
             getTime + "\t" + "Histogram of Oriented Gradients: (neighbours:\t")
     global badResult, goodResult
+
     inputFile = cv2.imread(inputFilePath)
-    inputFile = imutils.resize(inputFile, 1000)
+    height, width = inputFile.shape[:2]
+    if (width < 600 or height < 600):
+        inputFile = imutils.resize(inputFile, 1000)
+        height, width = inputFile.shape[:2]
+
+    #
     # ( Width [0], Height [1]
     # inputFile = imutils.resize(inputFile, 500)
     grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
@@ -241,7 +245,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         # cv2.waitKey(0)
 
         #     obliczanie czy twarz jest przechylonwa wzdłuż jaw
-        fa = FaceAligner(predictor, desiredFaceWidth=1000)
+        fa = FaceAligner(predictor, desiredFaceWidth=width, desiredFaceHeight=height)
         faceOrig = imutils.resize(inputFile[y:y + h, x:x + w], width=256)
         xCenter = (int)((w / 2) + x)
         yCenter = (int)((h / 2) + y)
@@ -253,7 +257,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
             #     cv2.circle(grayImage, (x, y), 1, (0, 0, 255), 5)
 
             # cv2.circle(grayImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
-            cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, grayImage)
+            # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, grayImage)
         else:
             grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
             faceAligned = fa.align(inputFile, grayImage, rect)
@@ -326,8 +330,21 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
             # print(counter)
 
             # cv2.circle(faceAligned, (xCenter, yCenter), 1, (200, 255, 23), 5)
-            analysedData.append(DataStorage(inputFilePath, 0, inputFile, faceAligned, shape, False))
-            print("analysedData: " + str(analysedData.__len__()))
+
+            # sprawdzenie po powtórnym przypisaniu czy twarz na pewno ma rozmiar twarzy czy też się nie zgubiła w procesie powtórenego przypisania punktów twarzy
+            # brane jest połowa długości rect i porównywana z totalną szerokością twarzy
+            fp4 = [shape[4][0], shape[4][1]]
+            fp12 = [shape[12][0], shape[12][1]]
+
+            totalFaceLength = math.sqrt(math.pow(fp12[0] - fp4[0], 2) + (math.pow(fp12[1] - fp4[1], 2)))
+            faceRectSize = 0.5 * (math.sqrt(math.pow(x - (x + w), 2) + (math.pow(y - y, 2))))
+            if (totalFaceLength > faceRectSize):
+                analysedData.append(DataStorage(inputFilePath, 0, inputFile, faceAligned, shape, False))
+                print("analysedData: " + str(analysedData.__len__()))
+            else:
+                print("Zdjecie odrzucone")
+                cv2.imshow("Aligned", faceAligned)
+                cv2.waitKey(0)
 
             # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceAligned)
 
@@ -335,147 +352,27 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
             # cv2.waitKey(0)
 
 
-def researchOrderer(alghoritmName, mode, values, clear):
+def researchOrderer(alghoritmName, mode, values, listergood):
     global printDetails
     global goodResult, badResult
-    falsePositive = 0
-    truePositive = 0
-    falseNegative = 0
-    trueNegative = 0
+    lister_good = glob.glob(listergood)
 
     global positiveLister
     global getXTime
     getTimeFolderPersons = datetime.datetime.now()
     getXTime = str(getTimeFolderPersons.strftime("%Y-%m-%d - %H-%M-%S"))
     if (alghoritmName == "HOG"):
-        if (mode == "SICK"):
-            file.writelines("Positive\t")
-            print("HOG: Sick People")
 
-            pathCore = researchDefPath + "HOG\\" + getXTime + " HOG " + "\\"
-            pathCore = pathCore.replace(":", " ")
-
-            os.mkdir(pathCore)
-            pathGood = pathCore + "Dobre\\"
-            pathBad = pathCore + "Zle\\"
-            os.mkdir(pathGood)
-            os.mkdir(pathBad)
+        if (mode == "HEALTHY"):
             counter = 0
-            for image in positiveLister:
-                print(image)
-                print("Iteracja: " + str(counter))
-                counter += 1
-                # dlibFaceDetector(image, pathGood, pathBad)
-                if printDetails:
-                    printDetails = False
-            printDetails = True
-            file.writelines("Results:\t")
-            file.writelines("Good:\t" + str(goodResult) + '\t')
-            file.writelines("Bad:\t" + str(badResult) + '\t')
-            file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-            goodResult = 0
-            badResult = 0
-        elif (mode == "HEALTHY"):
-            print("HOG: Healthy People")
-            # if clear == 0 :
-            #     removeAllResults(00)
-            pathCore = personDefPath + getXTime + " HOG" + "\\"
-            pathCore = pathCore.replace(":", " ")
-            os.mkdir(pathCore)
-            pathGood = pathCore + "Dobre\\"
-            pathBad = pathCore + "Zle\\"
-            pathGoodBad = pathCore + "Dobre_Nietrafione\\"
-            pathBadBad = pathCore + "Zle_Nietrafione\\"
-
-            os.mkdir(pathGood)
-            os.mkdir(pathBad)
-            os.mkdir(pathGoodBad)
-            os.mkdir(pathBadBad)
-            ######################################################################################
-            cpathGood = pathCore + "Chore_Dobre\\"
-            cpathBad = pathCore + "Chore_Zle\\"
-            cpathGoodBad = pathCore + "Chore_Dobre_Nietrafione\\"
-            cpathBadBad = pathCore + "Chore_Zle_Nietrafione\\"
-            os.mkdir(cpathGood)
-            os.mkdir(cpathBad)
-            os.mkdir(cpathGoodBad)
-            os.mkdir(cpathBadBad)
-            lister_good = glob.glob("ProbkiBadawcze/OsobaChora/Dobre/*")
-            # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
-            lister_bad = glob.glob("ProbkiBadawcze/OsobaChora/Zle/*")
-
-            # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
-            counter = 0
-
-            file.writelines("\n\npitch\t" + "\troll\t" "\tyaw\t" + "filename\n")
             for image in lister_good:
                 print(image)
                 print("Iteracja: " + str(counter))
                 counter += 1
-                # dlibFaceDetector(image, cpathGood, cpathGoodBad)
+                dlibFaceDetector(image, 0, 0)
                 if printDetails:
                     printDetails = False
             printDetails = True
-
-            truePositive += goodResult
-            falseNegative += badResult
-            goodResult = 0
-            badResult = 0
-            counter = 0
-            for image in lister_bad:
-                print(image)
-                print("Iteracja: " + str(counter))
-                counter += 1
-                # dlibFaceDetector(image, cpathBadBad, cpathBad)
-                if printDetails:
-                    printDetails = False
-            printDetails = True
-            falsePositive += badResult
-            trueNegative += goodResult
-            goodResult = 0
-            badResult = 0
-            ######################################################################################
-            file.writelines("\n\npitch\t" + "\troll\t" "\tyaw\t" + "filename\n")
-            for i in range(1, 11, 1):
-
-                lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
-                # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
-                lister_bad = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Zle/*")
-
-                # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
-                counter = 0
-                for image in lister_good:
-                    print(image)
-                    print("Iteracja: " + str(counter))
-                    counter += 1
-                    dlibFaceDetector(image, pathGood, pathGoodBad)
-                    if printDetails:
-                        printDetails = False
-                printDetails = True
-
-                truePositive += goodResult
-                falseNegative += badResult
-                goodResult = 0
-                badResult = 0
-                counter = 0
-                for image in lister_bad:
-                    print(image)
-                    print("Iteracja: " + str(counter))
-                    counter += 1
-                    # dlibFaceDetector(image, pathBadBad, pathBad)
-                    if printDetails:
-                        printDetails = False
-                printDetails = True
-                falsePositive += badResult
-                trueNegative += goodResult
-                goodResult = 0
-                badResult = 0
-        # file.writelines(
-        #     getTime + "\tHOG: " + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
-        #     str(falseNegative) + "\tfalsePositive:\t" + str(
-        #         falsePositive) + "\ttrueNegative:\t" + str(
-        #         trueNegative) + "\tTotal:\t" + str(
-        #         truePositive + trueNegative + falsePositive + falseNegative))
 
 
 def higestValue(entry):
@@ -501,40 +398,8 @@ def toGray(colorimg):
     return gray
 
 
-def mse(imageA, imageB):
-    # the 'Mean Squared Error' between the two images is the
-    # sum of the squared difference between the two images;
-    # NOTE: the two images must have the same dimension
-    err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
-    err /= float(imageA.shape[0] * imageA.shape[1])
-
-    # return the MSE, the lower the error, the more "similar"
-    # the two images are
-    return err
-
-
 def compare_images(imageA, imageB, title):
-    # compute the mean squared error and structural similarity
-    # index for the images
-    m = mse(imageA, imageB)
     s = ssim(imageA, imageB)
-
-    # # setup the figure
-    # fig = plt.figure(title)
-    # plt.suptitle("MSE: %.2f, SSIM: %.2f" % (m, s))
-    #
-    # # show first image
-    # ax = fig.add_subplot(1, 2, 1)
-    # plt.imshow(imageA, cmap=plt.cm.gray)
-    # plt.axis("off")
-    #
-    # # show the second image
-    # ax = fig.add_subplot(1, 2, 2)
-    # plt.imshow(imageB, cmap=plt.cm.gray)
-    # plt.axis("off")
-    #
-    # # show the images
-    # plt.show()
     return s
 
 
@@ -569,10 +434,10 @@ def show_sift_features(gray_img, color_img, kp):
     cv2.waitKey(0)
 
 
-def preprecessCorrectedFaces(aData, isSickCollection):
+def preprecessCorrectedFaceParts(aData, isSickCollection, path):
     global getXTime
     getTimeFolderPersons = datetime.datetime.now()
-    pathCore = personDefPath + getXTime + " EXTRACTED DATA " + "\\"
+    pathCore = path + getXTime + " EXTRACTED DATA " + "\\"
     getXTime = str(getTimeFolderPersons.strftime("%Y-%m-%d - %H-%M-%S"))
     pathCore = pathCore.replace(":", " ")
     pathGood = pathCore + "Dobre\\"
@@ -929,16 +794,16 @@ def preprecessCorrectedFaces(aData, isSickCollection):
         singleReturnArray.append(isSickCollection)
         outputDataArray.append(singleReturnArray)
 
-        leftNosePartKP, leftNosePartDESC = gen_sift_features(leftNosePartGRAY)
-        rightNosePartREVKP, rightNosePartREVDESC = gen_sift_features(rightNosePartREVGRAY)
-        leftMounthEdgeKP, leftMounthEdgeDESC = gen_sift_features(leftMounthEdgeGRAY)
-        rightMounthEdgeREVKP, rightMounthEdgeREVDESC = gen_sift_features(rightMounthEdgeREVGRAY)
-        leftEyeEdgeKP, leftEyeEdgeDESC = gen_sift_features(leftEyeEdgeGRAY)
-        rightEyeEdgeREVKP, rightEyeEdgeREVDESC = gen_sift_features(rightEyeEdgeREVGRAY)
-        leftUnderEyeKP, leftUnderEyeDESC = gen_sift_features(leftUnderEyeGRAY)
-        rightUnderEyeREVKP, rightUnderEyeREVDESC = gen_sift_features(rightUnderEyeREVGRAY)
-        mounthLeftPartKP, mounthLeftPartDESC = gen_sift_features(mounthLeftPartGRAY)
-        mounthRightPartREVKP, mounthRightPartREVDESC = gen_sift_features(mounthRightPartREVGRAY)
+        # leftNosePartKP, leftNosePartDESC = gen_sift_features(leftNosePartGRAY)
+        # rightNosePartREVKP, rightNosePartREVDESC = gen_sift_features(rightNosePartREVGRAY)
+        # leftMounthEdgeKP, leftMounthEdgeDESC = gen_sift_features(leftMounthEdgeGRAY)
+        # rightMounthEdgeREVKP, rightMounthEdgeREVDESC = gen_sift_features(rightMounthEdgeREVGRAY)
+        # leftEyeEdgeKP, leftEyeEdgeDESC = gen_sift_features(leftEyeEdgeGRAY)
+        # rightEyeEdgeREVKP, rightEyeEdgeREVDESC = gen_sift_features(rightEyeEdgeREVGRAY)
+        # leftUnderEyeKP, leftUnderEyeDESC = gen_sift_features(leftUnderEyeGRAY)
+        # rightUnderEyeREVKP, rightUnderEyeREVDESC = gen_sift_features(rightUnderEyeREVGRAY)
+        # mounthLeftPartKP, mounthLeftPartDESC = gen_sift_features(mounthLeftPartGRAY)
+        # mounthRightPartREVKP, mounthRightPartREVDESC = gen_sift_features(mounthRightPartREVGRAY)
 
         # show_sift_features(leftNosePartGRAY, leftNosePart, leftNosePartKP)
         # show_sift_features(rightNosePartREVGRAY, rightNosePartREV, rightNosePartREVKP)
@@ -1025,7 +890,7 @@ def preprecessCorrectedFaces(aData, isSickCollection):
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
 
-        cv2.imwrite(pathGood + pathlib.Path(member.fileName).name, member.alignedImage)
+        cv2.imwrite(pathCore + pathlib.Path(member.fileName).name, member.alignedImage)
     print("dlugosc wektora z wydobytymi danymi: " + str(len(outputDataArray)))
     for x in outputDataArray:
         print(x)
@@ -1040,7 +905,14 @@ def preprecessCorrectedFaces(aData, isSickCollection):
         with open('ExposedData_Healthy.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
 
+    aData = []
 
-researchOrderer("HOG", "HEALTHY", 0, 0)
-preprecessCorrectedFaces(analysedData, 0)
+
+#
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Uczacy/Negatywne/*")
+# preprecessCorrectedFaceParts(analysedData, 0,"Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+# #
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Uczacy/Pozytywne/*")
+# preprecessCorrectedFaceParts(analysedData, 1,"Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+
 file.close()
