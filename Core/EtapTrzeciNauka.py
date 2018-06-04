@@ -17,7 +17,10 @@ from skimage.measure import compare_ssim as ssim
 from skimage.color import rgb2gray
 import json
 
+from sklearn import datasets
 from skimage import exposure
+from sklearn.model_selection import train_test_split
+
 from PIL import Image
 
 from skimage import exposure
@@ -32,10 +35,16 @@ from skimage import io
 import matplotlib.pyplot as plt
 from skimage.feature import hog
 from skimage import data, exposure
+from sklearn import neighbors
+
 from dataStorage import DataStorage
 from skimage import exposure
 from skimage import feature
 from skimage import img_as_ubyte
+
+from sklearn.metrics import accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import BallTree
 
 ###STAŁE
 predictor_path = "landmark/shape_predictor_68_face_landmarks.dat"
@@ -76,6 +85,10 @@ badDeepLearning = 0
 ### WYGENEROWANE
 
 analysedData = []
+positiveData = 0
+negativeData = 0
+positiveDataTest = 0
+negativeDataTest = 0
 
 ### Sprawdzenie czy istnieje plik do logów
 getTime = str(datetime.datetime.now().ctime())
@@ -97,10 +110,14 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
     global badResult, goodResult
 
     inputFile = cv2.imread(inputFilePath)
-    height, width = inputFile.shape[:2]
-    if (width < 600 or height < 600):
-        inputFile = imutils.resize(inputFile, 1000)
-        height, width = inputFile.shape[:2]
+    inputFile = imutils.resize(inputFile, 1000)
+    # height, width = inputFile.shape[:2]
+    # if (width < 600 or height < 600):
+    #     inputFile = imutils.resize(inputFile, 1000)
+    #     height, width = inputFile.shape[:2]
+    # elif (width > 2000 or height > 2000):
+    #     inputFile = imutils.resize(inputFile, int(width * 0.80), int(height * 0.80))
+    #     height, width = inputFile.shape[:2]
 
     #
     # ( Width [0], Height [1]
@@ -765,13 +782,6 @@ def preprecessCorrectedFaceParts(aData, isSickCollection, path):
         # dobieranie rozmiaru   :)
         ##########################################
         ##########################################
-
-        leftNosePart, rightNosePartREV = resizeImagestToSameLevel(leftNosePart, rightNosePartREV)
-        leftMounthEdge, rightMounthEdgeREV = resizeImagestToSameLevel(leftMounthEdge, rightMounthEdgeREV)
-        leftEyeEdge, rightEyeEdgeREV = resizeImagestToSameLevel(leftEyeEdge, rightEyeEdgeREV)
-        leftUnderEye, rightUnderEyeREV = resizeImagestToSameLevel(leftUnderEye, rightUnderEyeREV)
-        mounthLeftPart, mounthRightPartREV = resizeImagestToSameLevel(mounthLeftPart, mounthRightPartREV)
-
         leftNosePartGRAY = toGray(leftNosePart)
         rightNosePartREVGRAY = toGray(rightNosePartREV)
         leftMounthEdgeGRAY = toGray(leftMounthEdge)
@@ -782,6 +792,14 @@ def preprecessCorrectedFaceParts(aData, isSickCollection, path):
         rightUnderEyeREVGRAY = toGray(rightUnderEyeREV)
         mounthLeftPartGRAY = toGray(mounthLeftPart)
         mounthRightPartREVGRAY = toGray(mounthRightPartREV)
+
+        leftNosePartGRAY, rightNosePartREVGRAY = resizeImagestToSameLevel(leftNosePartGRAY, rightNosePartREVGRAY)
+        leftMounthEdgeGRAY, rightMounthEdgeREVGRAY = resizeImagestToSameLevel(leftMounthEdgeGRAY,
+                                                                              rightMounthEdgeREVGRAY)
+        leftEyeEdgeGRAY, rightEyeEdgeREVGRAY = resizeImagestToSameLevel(leftEyeEdgeGRAY, rightEyeEdgeREVGRAY)
+        leftUnderEyeGRAY, rightUnderEyeREVGRAY = resizeImagestToSameLevel(leftUnderEyeGRAY, rightUnderEyeREVGRAY)
+        mounthLeftPartGRAY, mounthRightPartREVGRAY = resizeImagestToSameLevel(mounthLeftPartGRAY,
+                                                                              mounthRightPartREVGRAY)
 
         analysedParts = [[leftNosePartGRAY, rightNosePartREVGRAY], [leftMounthEdgeGRAY, rightMounthEdgeREVGRAY],
                          [leftEyeEdgeGRAY, rightEyeEdgeREVGRAY], [leftUnderEyeGRAY, rightUnderEyeREVGRAY],
@@ -900,19 +918,77 @@ def preprecessCorrectedFaceParts(aData, isSickCollection, path):
         with open('ExposedData_Sick.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
 
-    else:
+    elif (isSickCollection == 1):
         # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
         with open('ExposedData_Healthy.txt', 'w') as filehandle:
+            json.dump(outputDataArray, filehandle)
+    elif (isSickCollection == 2):
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Healthy_test.txt', 'w') as filehandle:
+            json.dump(outputDataArray, filehandle)
+    elif (isSickCollection == 3):
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Sick_test.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
 
     aData = []
 
 
-#
+def extractData():
+    global positiveData, negativeData, positiveDataTest, negativeDataTest
+    with open("ExposedData_Sick.txt", "r")as filehandle:
+        positiveData = json.load(filehandle)
+
+    print(positiveData)
+
+    with open('ExposedData_Healthy.txt', 'r') as filehandle:
+        negativeData = json.load(filehandle)
+    print(negativeData)
+    #######################
+    with open('ExposedData_Sick_test.txt', 'r') as filehandle:
+        positiveDataTest = json.load(filehandle)
+    print(positiveDataTest)
+    with open('ExposedData_Healthy_test.txt', 'r') as filehandle:
+        negativeDataTest = json.load(filehandle)
+    print(negativeDataTest)
+
+
+def kNearestClassifierLarning():
+    totalData = positiveData + negativeData
+    totalLength = len(totalData)
+    totalData = np.array(totalData)
+    # iris = datasets.load_iris()
+    # features_train, features_test, labels_train, labels_test = train_test_split(iris.data, iris.target, test_size=0.25)
+    X = totalData[:, range(0, 5)]
+    Y = totalData[:, 5]
+    knn = KNeighborsClassifier(n_neighbors=10, weights='distance', algorithm='auto')
+    knn.fit(X, Y)
+
+    totalTestData = negativeDataTest + positiveDataTest
+    totalTestData = np.array(totalTestData)
+    testData = totalTestData[:, range(0, 5)]
+    testDataLabels = totalTestData[:, 5]
+    knnPredictor = knn.predict(testData)
+
+    output = accuracy_score(testDataLabels, knnPredictor)
+    print("output accuracy: " + str(output))
+
+
 # researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Uczacy/Negatywne/*")
 # preprecessCorrectedFaceParts(analysedData, 0,"Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 # #
 # researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Uczacy/Pozytywne/*")
 # preprecessCorrectedFaceParts(analysedData, 1,"Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+
+
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Negatywne/*")
+# preprecessCorrectedFaceParts(analysedData, 2, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+# # #
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Pozytywne/Ciezkie/*")
+# preprecessCorrectedFaceParts(analysedData, 3, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+
+extractData()
+
+kNearestClassifierLarning()
 
 file.close()
