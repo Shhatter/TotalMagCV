@@ -15,6 +15,7 @@ from imutils import face_utils
 from imutils.face_utils import FaceAligner
 from skimage.measure import compare_ssim as ssim
 from skimage.color import rgb2gray
+from sklearn.preprocessing import MinMaxScaler
 import json
 
 from sklearn import datasets
@@ -811,7 +812,10 @@ def preprecessCorrectedFaceParts(aData, isSickCollection, path):
         for singleComparasion in analysedParts:
             singleReturnArray.append(compare_images(singleComparasion[0], singleComparasion[1], "placki"))
 
-        singleReturnArray.append(isSickCollection)
+        if (isSickCollection == 0 or isSickCollection == 3):
+            singleReturnArray.append(0)
+        else:
+            singleReturnArray.append(1)
         outputDataArray.append(singleReturnArray)
 
         cv2.imwrite(pathCore + pathlib.Path(member.fileName).name, member.alignedImage)
@@ -819,12 +823,12 @@ def preprecessCorrectedFaceParts(aData, isSickCollection, path):
     for x in outputDataArray:
         print(x)
 
-    if isSickCollection == 0:
+    if isSickCollection == 1:
         # if not (pathlib.Path("ExposedData_Sick.txt").is_file()):
         with open('ExposedData_Sick.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
 
-    elif (isSickCollection == 1):
+    elif (isSickCollection == 0):
         # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
         with open('ExposedData_Healthy.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
@@ -885,6 +889,7 @@ def findAngle(p0, p1, p2):
     b = math.pow(p1[0] - p2[0], 2) + math.pow(p1[1] - p2[1], 2)
     c = math.pow(p2[0] - p0[0], 2) + math.pow(p2[1] - p0[1], 2)
     return math.acos((a + b - c) / math.sqrt(4 * a * b)) * (180 / math.pi)
+    # return math.acos((a + b - c) / math.sqrt(4 * a * b))  # * (180 / math.pi)
 
 
 def gaussianNaiveBayessLearning():
@@ -932,6 +937,7 @@ def intersectionPointFinder(pointL1A, pointL1B, pointL2A, pointL2B):
 
 def preprecessCorrectedFaceAngles(aData, isSickCollection, path):
     # wyliczenie funkcji 4 prostych na podstawie ich punktów
+    outputDataArray = []
     for member in aData:
         member.printer()
         height, width = member.alignedImage.shape[:2]
@@ -1005,27 +1011,6 @@ def preprecessCorrectedFaceAngles(aData, isSickCollection, path):
         fp66 = [member.shape[66][0], member.shape[66][1]]
         fp67 = [member.shape[67][0], member.shape[67][1]]
 
-        # linia oczu
-        # fp42 = [member.shape[42][0], member.shape[42][1]]  # prawy wewnetrzny kacik oka
-        # fp39 = [member.shape[39][0], member.shape[39][1]]  # lewy wewnetrzny kącik oka
-        aEyes = (fp42[1] - fp39[1]) / (fp42[0] - fp39[0])
-        bEyes = fp39[1] - (aEyes * fp39[0])
-
-        # linia nosa
-        # fp27 = [member.shape[27][0], member.shape[27][1]]
-        # fp30 = [member.shape[30][0], member.shape[30][1]]  # czubek nosa
-        aNose = (fp30[1] - fp27[1]) / (fp30[0] - fp27[0])
-        bNose = fp27[1] - (aNose * fp27[0])
-
-        # linia pod nosem
-
-        aUnderNose = (fp36[1] - fp32[1]) / (fp36[0] - fp32[0])
-        bUnderNose = fp32[1] - (aUnderNose * fp32[0])
-
-        # linia ust
-        aLips = (fp54[1] - fp48[1]) / (fp54[0] - fp48[0])
-        bLips = fp48[1] - (aLips * fp48[0])
-
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
         # wyznaczanie miejsc przecięcia kazdej z lini@@@@@@@@@@@@@@@@
         # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -1040,13 +1025,478 @@ def preprecessCorrectedFaceAngles(aData, isSickCollection, path):
         # print(math.atan2(fp27[1] - yNoseUnderNose, xNoseUnderNose - fp27[0]) * (180.0 / math.pi))
         # print(math.atan2(fp27[1] - yNoseMounth, xNoseMounth - fp27[0]) * (180.0 / math.pi))
         print("@@@@@@@@@@@@@@@@@@@@@@@@")
-        print(findAngle(fp39, [xNoseEyes, yNoseEyes], fp27))
-        print(findAngle(fp31, [xNoseUnderNose, yNoseUnderNose], fp27))
-        print(findAngle(fp48, [xNoseMounth, yNoseMounth], fp27))
+        angle1 = float(findAngle(fp39, [xNoseEyes, yNoseEyes], fp27) / 180)
+        angle2 = float(findAngle(fp31, [xNoseUnderNose, yNoseUnderNose], fp27) / 180)
+        angle3 = float(findAngle(fp48, [xNoseMounth, yNoseMounth], fp27) / 180)
         print("@@@@@@@@@@@@@@@@@@@@@@@@")
-        print(findAngle(fp27, [xNoseEyes, yNoseEyes], fp42))
-        print(findAngle(fp27, [xNoseUnderNose, yNoseUnderNose], fp35))
-        print(findAngle(fp27, [xNoseMounth, yNoseMounth], fp54))
+
+        print("@@@@@@@@@@@@@@@@@@@@@@@@")
+        angle4 = float(findAngle(fp49, fp48, fp59) / 180)  # lewy kącik
+        angle5 = float(findAngle(fp53, fp54, fp55) / 180)  # prawy kacik
+        angle6 = float(findAngle(fp27, fp48, fp56) / 180)  # lewy kacik i nos
+        angle7 = float(findAngle(fp27, fp54, fp56) / 180)  # prawy kacik i nos
+
+        # angle4 = float(findAngle(fp27, [xNoseEyes, yNoseEyes], fp42)/180)
+        # angle5 = float(findAngle(fp27, [xNoseUnderNose, yNoseUnderNose], fp35)/180)
+        # angle6 = float(findAngle(fp27, [xNoseMounth, yNoseMounth], fp54)/180)
+
+        angler = [angle1, angle2, angle3, angle4, angle5, angle6, angle7]
+        print(angler)
+        # scaler = MinMaxScaler(copy=True, feature_range=(0, 1))
+        # scaler = scaler.fit(angler)
+        # new = scaler.transform(data)
+        # for x in new:
+        #     print (str(x))
+
+        if (isSickCollection == 0 or isSickCollection == 3):
+            angler.append(0)
+        else:
+            angler.append(1)
+
+        outputDataArray.append(angler)
+
+    if isSickCollection == 1:
+        # if not (pathlib.Path("ExposedData_Sick.txt").is_file()):
+        with open('ExposedData_Angle_Sick.txt', 'w') as filehandle:
+            json.dump(angler, filehandle)
+
+    elif (isSickCollection == 0):
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Angle_Healthy.txt', 'w') as filehandle:
+            json.dump(angler, filehandle)
+    elif (isSickCollection == 2):
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Angle_Healthy_test.txt', 'w') as filehandle:
+            json.dump(angler, filehandle)
+    elif (isSickCollection == 3):
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Angle_Sick_test.txt', 'w') as filehandle:
+            json.dump(angler, filehandle)
+
+    aData = []
+
+
+def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
+    global getXTime
+    getTimeFolderPersons = datetime.datetime.now()
+    pathCore = path + getXTime + " EXTRACTED DATA " + "\\"
+    getXTime = str(getTimeFolderPersons.strftime("%Y-%m-%d - %H-%M-%S"))
+    pathCore = pathCore.replace(":", " ")
+    pathGood = pathCore + "Dobre\\"
+    pathBad = pathCore + "Zle\\"
+    os.mkdir(pathCore)
+    os.mkdir(pathGood)
+    os.mkdir(pathBad)
+    outputDataArray = []
+
+    for member in aData:
+        member.printer()
+
+        cleanImage = member.alignedImage.copy()
+        # member.alignedImage
+        height, width = member.alignedImage.shape[:2]
+        print(height, width)
+        fp0 = [member.shape[0][0], member.shape[0][1]]
+        fp1 = [member.shape[1][0], member.shape[1][1]]
+        fp2 = [member.shape[2][0], member.shape[2][1]]
+        fp3 = [member.shape[3][0], member.shape[3][1]]
+        fp4 = [member.shape[4][0], member.shape[4][1]]
+        fp5 = [member.shape[5][0], member.shape[5][1]]
+        fp6 = [member.shape[6][0], member.shape[6][1]]
+        fp7 = [member.shape[7][0], member.shape[7][1]]
+        fp8 = [member.shape[8][0], member.shape[8][1]]
+        fp9 = [member.shape[9][0], member.shape[9][1]]
+        fp10 = [member.shape[10][0], member.shape[10][1]]
+        fp11 = [member.shape[11][0], member.shape[11][1]]
+        fp12 = [member.shape[12][0], member.shape[12][1]]
+        fp13 = [member.shape[13][0], member.shape[13][1]]
+        fp14 = [member.shape[14][0], member.shape[14][1]]
+        fp15 = [member.shape[15][0], member.shape[15][1]]
+        fp16 = [member.shape[16][0], member.shape[16][1]]
+        fp17 = [member.shape[17][0], member.shape[17][1]]  # poczatek lewej brwi
+        fp18 = [member.shape[18][0], member.shape[18][1]]
+        fp19 = [member.shape[19][0], member.shape[19][1]]
+        fp20 = [member.shape[20][0], member.shape[20][1]]
+        fp21 = [member.shape[21][0], member.shape[21][1]]
+        fp22 = [member.shape[22][0], member.shape[22][1]]
+        fp23 = [member.shape[23][0], member.shape[23][1]]
+        fp24 = [member.shape[24][0], member.shape[24][1]]
+        fp25 = [member.shape[25][0], member.shape[25][1]]
+        fp26 = [member.shape[26][0], member.shape[26][1]]  # poczatek prawej brwi
+        fp27 = [member.shape[27][0], member.shape[27][1]]  # pierwszy nosowy
+        fp28 = [member.shape[28][0], member.shape[28][1]]  # drugi nosowy
+        fp29 = [member.shape[29][0], member.shape[29][1]]  # ponad czubkiemn nosa
+        fp30 = [member.shape[30][0], member.shape[30][1]]  # czubek nosa
+        fp31 = [member.shape[31][0], member.shape[31][1]]
+        fp32 = [member.shape[32][0], member.shape[32][1]]
+        fp33 = [member.shape[33][0], member.shape[33][1]]
+        fp34 = [member.shape[34][0], member.shape[34][1]]
+        fp35 = [member.shape[35][0], member.shape[35][1]]
+        fp36 = [member.shape[36][0], member.shape[36][1]]  # lewy zewnętrzny kącik oka
+        fp37 = [member.shape[37][0], member.shape[37][1]]  # lewa gorna zewnetrzna zrenica
+        fp38 = [member.shape[38][0], member.shape[38][1]]  # lewa gorna wewnetrzna zrenica
+        fp39 = [member.shape[39][0], member.shape[39][1]]  # lewy wewnetrzny kącik oka
+        fp40 = [member.shape[40][0], member.shape[40][1]]  # lewa dolna zrenica wewnetrzna
+        fp41 = [member.shape[41][0], member.shape[41][1]]  # lewa dolna zrenica zewnetrzna
+        fp42 = [member.shape[42][0], member.shape[42][1]]  # prawy wewnetrzny kacik oka
+        fp43 = [member.shape[43][0], member.shape[43][1]]
+        fp44 = [member.shape[44][0], member.shape[44][1]]
+        fp45 = [member.shape[45][0], member.shape[45][1]]  # prawy zewnetrzny kacik oka
+        fp46 = [member.shape[46][0], member.shape[46][1]]  # zewnetrzna prawwa zrenica
+        fp47 = [member.shape[47][0], member.shape[47][1]]  # wewnetrzna prawa zrenica
+        fp48 = [member.shape[48][0], member.shape[48][1]]  # lewy kącik ust
+        fp49 = [member.shape[49][0], member.shape[49][1]]  # lewa warga zewnątrz góra
+        fp50 = [member.shape[50][0], member.shape[50][1]]
+        fp51 = [member.shape[51][0], member.shape[51][1]]  # środek górnej wargi
+        fp52 = [member.shape[52][0], member.shape[52][1]]
+        fp53 = [member.shape[53][0], member.shape[53][1]]  # prawa warga zewnątrz góra
+        fp54 = [member.shape[54][0], member.shape[54][1]]  # prawy kącik ust
+        fp55 = [member.shape[55][0], member.shape[55][1]]  # prawa warga zewnątrz dół
+        fp56 = [member.shape[56][0], member.shape[56][1]]  # środek dolnej wargi
+        fp57 = [member.shape[57][0], member.shape[57][1]]
+        fp58 = [member.shape[58][0], member.shape[58][1]]
+        fp59 = [member.shape[59][0], member.shape[59][1]]  # lewa warga dół zewnątrz
+        fp60 = [member.shape[60][0], member.shape[60][1]]
+        fp61 = [member.shape[61][0], member.shape[61][1]]
+        fp62 = [member.shape[62][0], member.shape[62][1]]
+        fp63 = [member.shape[63][0], member.shape[63][1]]
+        fp64 = [member.shape[64][0], member.shape[64][1]]
+        fp65 = [member.shape[65][0], member.shape[65][1]]
+        fp66 = [member.shape[66][0], member.shape[66][1]]
+        fp67 = [member.shape[67][0], member.shape[67][1]]
+
+        # wyznaczanie kwadratów :
+
+        # lewa fałdka nosa
+        pointThreeLineY = 0
+        pointThreeLineX = 0
+        upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (math.pow(fp49[1] - fp51[1], 2))))
+        lowerMounthMiddleLength = int(math.sqrt(math.pow(fp59[0] - fp56[0], 2) + (math.pow(fp59[1] - fp56[1], 2))))
+        if (upperMounthMiddleLength > lowerMounthMiddleLength):
+            pointThreeLineY = fp49[0]
+        else:
+            pointThreeLineY = fp59[0]
+
+        pointOne = [fp36[0], fp30[1]]
+
+        distanceBetweenNewPointandEyeEdge = int(
+            math.sqrt(math.pow(pointOne[0] - fp36[0], 2) + (math.pow(pointOne[1] - fp36[1], 2))))
+        distanceBetweenEyeErisEdges = int(
+            math.sqrt(math.pow(fp41[0] - fp40[0], 2) + (math.pow(fp41[1] - fp40[1], 2))))
+        if (distanceBetweenNewPointandEyeEdge < distanceBetweenEyeErisEdges):
+            pointOne[1] += int(math.sqrt(math.pow(fp41[0] - fp40[0], 2) + (math.pow(fp41[1] - fp40[1], 2))))
+
+        pointW = pointThreeLineY - pointOne[0]
+
+        pointThreeLineX = int(fp59[1] + math.sqrt(math.pow(fp59[0] - fp49[0], 2) + (math.pow(fp59[1] - fp49[1], 2))))
+        pointH = pointThreeLineX - pointOne[1]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 255, 0), 2)
+        leftNosePart = cropped
+        # cv2.imshow("nopper", member.alignedImage)
+        # cv2.waitKey(0)
+
+        #####################################################
+        #####################################################
+        # prawa fałdka nosa #####################################################
+        #####################################################
+        #####################################################
+        poczatekKwadratuX = 0
+        pointThreeLineY = 0
+        upperMounthMiddleLength = int(math.sqrt(math.pow(fp53[0] - fp51[0], 2) + (math.pow(fp53[1] - fp51[1], 2))))
+        lowerMounthMiddleLength = int(math.sqrt(math.pow(fp55[0] - fp56[0], 2) + (math.pow(fp55[1] - fp56[1], 2))))
+        if (upperMounthMiddleLength > lowerMounthMiddleLength):
+            poczatekKwadratuX = fp53[0]
+        else:
+            poczatekKwadratuX = fp55[0]
+
+        pointTwo = [fp45[0], fp30[1]]
+
+        distanceBetweenNewPointandEyeEdge = int(
+            math.sqrt(math.pow(pointTwo[0] - fp45[0], 2) + (math.pow(pointTwo[1] - fp45[1], 2))))
+        distanceBetweenEyeErisEdges = int(
+            math.sqrt(math.pow(fp46[0] - fp47[0], 2) + (math.pow(fp46[1] - fp47[1], 2))))
+        if (distanceBetweenNewPointandEyeEdge < distanceBetweenEyeErisEdges):
+            pointTwo[1] += int(math.sqrt(math.pow(fp46[0] - fp47[0], 2) + (math.pow(fp46[1] - fp47[1], 2))))
+
+        pointW = pointTwo[0] - poczatekKwadratuX
+        pointOne = [poczatekKwadratuX, pointTwo[1]]
+
+        pointThreeLineY = int(fp55[1] + math.sqrt(math.pow(fp55[0] - fp53[0], 2) + (math.pow(fp55[1] - fp53[1], 2))))
+        pointH = pointThreeLineY - pointOne[1]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 255, 0), 2)
+        rightNosePart = cropped
+        # cv2.imshow("nopper", member.alignedImage)
+        # cv2.waitKey(0)
+
+        ##################################### lewy kącik ust 49 / 59
+        upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (math.pow(fp49[1] - fp51[1], 2))))
+        lowerMounthMiddleLength = int(math.sqrt(math.pow(fp59[0] - fp56[0], 2) + (math.pow(fp59[1] - fp56[1], 2))))
+        if (upperMounthMiddleLength > lowerMounthMiddleLength):
+            pointTwooLineX = fp49[0]
+
+        else:
+            pointTwooLineX = fp59[0]
+
+        pointTwo = [pointTwooLineX,
+                    fp49[1] - int(0.5 * (math.sqrt(math.pow(fp49[0] - fp59[0], 2) + (math.pow(fp49[1] - fp59[1], 2)))))]
+
+        pointH = int(2 * (math.sqrt(math.pow(fp49[0] - fp59[0], 2) + (math.pow(fp49[1] - fp59[1], 2)))))
+        # # wyznaczanie odleglosci w
+        middlepoint = [int((fp49[0] + fp59[0]) / 2), int((fp49[1] + fp59[1]) / 2)]
+        pointW = int(1.5 * (math.sqrt(math.pow(middlepoint[0] - fp48[0], 2) + (math.pow(middlepoint[1] - fp48[1], 2)))))
+        pointOne = [pointTwo[0] - pointW, pointTwo[1]]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 140, 0), 2)
+        leftMounthEdge = cropped
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # prawy kącik ust 53 / 59 ###############
+        upperMounthMiddleLength = int(math.sqrt(math.pow(fp53[0] - fp51[0], 2) + (math.pow(fp53[1] - fp51[1], 2))))
+        lowerMounthMiddleLength = int(math.sqrt(math.pow(fp55[0] - fp56[0], 2) + (math.pow(fp55[1] - fp56[1], 2))))
+        if (upperMounthMiddleLength < lowerMounthMiddleLength):
+            pointTwooLineX = fp53[0]
+
+        else:
+            pointTwooLineX = fp55[0]
+
+        pointOne = [pointTwooLineX,
+                    fp53[1] - int(0.5 * (math.sqrt(math.pow(fp53[0] - fp55[0], 2) + (math.pow(fp53[1] - fp55[1], 2)))))]
+
+        pointH = int(2 * (math.sqrt(math.pow(fp53[0] - fp55[0], 2) + (math.pow(fp53[1] - fp55[1], 2)))))
+        # # wyznaczanie odleglosci w
+        middlepoint = [int((fp53[0] + fp55[0]) / 2), int((fp53[1] + fp55[1]) / 2)]
+        pointW = int(1.5 * (math.sqrt(math.pow(middlepoint[0] - fp54[0], 2) + (math.pow(middlepoint[1] - fp54[1], 2)))))
+        # pointOne = [pointTwo[0] - pointW, pointTwo[1]]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 140, 0), 2)
+        rightMounthEdge = cropped
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # lewy kącik oka ##################################
+
+        pointOne = fp17
+        pointW = fp36[0] - fp17[0]
+        pointH = int(1.5 * math.sqrt(math.pow(fp17[0] - fp36[0], 2) + (math.pow(fp17[1] - fp36[1], 2))))
+
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        leftEyeEdge = cropped
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 140, 170), 2)
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+        # prawy kącik oka ##################################
+        pointOne = [fp45[0], fp26[1]]
+        pointW = fp26[0] - pointOne[0]
+        pointH = int(1.5 * math.sqrt(math.pow(fp45[0] - fp26[0], 2) + (math.pow(fp45[1] - fp26[1], 2))))
+
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        rightEyeEdge = cropped
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 140, 255), 2)
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # lewa podpowieka ##################################
+        slope = math.atan2(fp30[1] - fp39[1], fp39[0] - fp30[0]) * (180.0 / math.pi)
+        pointOne = [fp36[0], 0]
+        pointW = int(math.sqrt(math.pow(fp39[0] - fp36[0], 2) + (math.pow(fp39[1] - fp36[1], 2))))
+        if (slope > 90):
+            slope = math.fabs(slope - 180)
+
+        if (slope < 22):
+            pointH = 2 * int(math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2))))
+
+        else:
+            pointH = int(1.5 * (math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2)))))
+
+        pointOne[1] = higestValue([fp36[1], fp40[1], fp39[1], fp41[1]])
+
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        leftUnderEye = cropped
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 240, 70), 2)
+
+        print("slope: " + str(slope))
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # prawa podpowieka ##################################
+        slope = math.atan2(fp30[1] - fp42[1], fp42[0] - fp30[0]) * (180.0 / math.pi)
+        pointOne = [fp42[0], 0]
+        pointW = int(math.sqrt(math.pow(fp42[0] - fp45[0], 2) + (math.pow(fp42[1] - fp45[1], 2))))
+
+        if (slope > 90):
+            slope = math.fabs(slope - 180)
+
+        if (slope < 22):
+            pointH = 2 * int(math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2))))
+
+        else:
+            pointH = int(1.5 * (math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2)))))
+
+        pointOne[1] = higestValue([fp42[1], fp46[1], fp47[1], fp45[1]])
+
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        rightUnderEye = cropped
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 240, 70), 2)
+
+        print("slope: " + str(slope))
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # Usta ###############
+
+        lowestMounthLevel = higestValue([fp48[1], fp54[1], fp55[1], fp56[1], fp57[1], fp58[1], fp59[1], fp60[1]])
+        highestMounthLevel = lowestValue([fp48[1], fp49[1], fp50[1], fp51[1], fp52[1], fp53[1], fp54[1]])
+        pointH = lowestMounthLevel - highestMounthLevel
+        pointW = fp54[0] - fp48[0]
+        pointOne = [fp48[0], highestMounthLevel]
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        mounthMainArea = cropped
+        mounthLeftPart = mounthMainArea[0:0 + pointH, 0:0 + int(pointW / 2)]
+        mounthRightPart = mounthMainArea[0:0 + pointH, int(pointW / 2):int(pointW / 2) + pointW]
+        # cv2.imshow("nope", mounthLeftPart)
+        # cv2.waitKey(0)
+        # cv2.imshow("nope", mounthRightPart)
+        # cv2.waitKey(0)
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (255, 0, 60), 2)
+        # cv2.imshow("nope", member.alignedImage)
+        # cv2.waitKey(0)
+        ##########################################
+        ##########################################
+        # rotowanie  :)
+        ##########################################
+        ##########################################
+        # leftNosePart
+        rightNosePartREV = cv2.flip(rightNosePart, 1)
+        # leftMounthEdge
+        rightMounthEdgeREV = cv2.flip(rightMounthEdge, 1)
+        # leftEyeEdge
+        rightEyeEdgeREV = cv2.flip(rightEyeEdge, 1)
+        # leftUnderEye
+        rightUnderEyeREV = cv2.flip(rightUnderEye, 1)
+        # mounthLeftPart
+        mounthRightPartREV = cv2.flip(mounthRightPart, 1)
+        ##########################################
+        ##########################################
+        # dobieranie rozmiaru   :)
+        ##########################################
+        ##########################################
+        leftNosePartGRAY = toGray(leftNosePart)
+        rightNosePartREVGRAY = toGray(rightNosePartREV)
+        leftMounthEdgeGRAY = toGray(leftMounthEdge)
+        rightMounthEdgeREVGRAY = toGray(rightMounthEdgeREV)
+        leftEyeEdgeGRAY = toGray(leftEyeEdge)
+        rightEyeEdgeREVGRAY = toGray(rightEyeEdgeREV)
+        leftUnderEyeGRAY = toGray(leftUnderEye)
+        rightUnderEyeREVGRAY = toGray(rightUnderEyeREV)
+        mounthLeftPartGRAY = toGray(mounthLeftPart)
+        mounthRightPartREVGRAY = toGray(mounthRightPartREV)
+
+        leftNosePartGRAY, rightNosePartREVGRAY = resizeImagestToSameLevel(leftNosePartGRAY, rightNosePartREVGRAY)
+        leftMounthEdgeGRAY, rightMounthEdgeREVGRAY = resizeImagestToSameLevel(leftMounthEdgeGRAY,
+                                                                              rightMounthEdgeREVGRAY)
+        leftEyeEdgeGRAY, rightEyeEdgeREVGRAY = resizeImagestToSameLevel(leftEyeEdgeGRAY, rightEyeEdgeREVGRAY)
+        leftUnderEyeGRAY, rightUnderEyeREVGRAY = resizeImagestToSameLevel(leftUnderEyeGRAY, rightUnderEyeREVGRAY)
+        mounthLeftPartGRAY, mounthRightPartREVGRAY = resizeImagestToSameLevel(mounthLeftPartGRAY,
+                                                                              mounthRightPartREVGRAY)
+
+        analysedParts = [[leftNosePartGRAY, rightNosePartREVGRAY], [leftMounthEdgeGRAY, rightMounthEdgeREVGRAY],
+                         [leftEyeEdgeGRAY, rightEyeEdgeREVGRAY], [leftUnderEyeGRAY, rightUnderEyeREVGRAY],
+                         [mounthLeftPartGRAY, mounthRightPartREVGRAY]]
+
+        singleReturnArray = []
+        for singleComparasion in analysedParts:
+            singleReturnArray.append(compare_images(singleComparasion[0], singleComparasion[1], "placki"))
+
+        ######################################################################################################################
+        xNoseEyes, yNoseEyes = intersectionPointFinder(fp39, fp42, fp27, fp30)
+        xNoseUnderNose, yNoseUnderNose = intersectionPointFinder(fp35, fp31, fp27, fp30)
+        xNoseMounth, yNoseMounth = intersectionPointFinder(fp48, fp54, fp27, fp30)
+
+        print("@@@@@@@@@@@@@@@@@@@@@@@@")
+        angle1 = float(findAngle(fp39, [xNoseEyes, yNoseEyes], fp27) / 180)
+        angle2 = float(findAngle(fp31, [xNoseUnderNose, yNoseUnderNose], fp27) / 180)
+        angle3 = float(findAngle(fp48, [xNoseMounth, yNoseMounth], fp27) / 180)
+        print("@@@@@@@@@@@@@@@@@@@@@@@@")
+
+        print("@@@@@@@@@@@@@@@@@@@@@@@@")
+        angle4 = float(findAngle(fp49, fp48, fp59) / 180)  # lewy kącik
+        angle5 = float(findAngle(fp53, fp54, fp55) / 180)  # prawy kacik
+        angle6 = float(findAngle(fp27, fp48, fp56) / 180)  # lewy kacik i nos
+        angle7 = float(findAngle(fp27, fp54, fp56) / 180)  # prawy kacik i nos
+
+        angler = [angle1, angle2, angle3, angle4, angle5, angle6, angle7]
+        print(angler)
+        singleReturnArrayFinal = singleReturnArray + angler
+
+        #####################################################################################################################
+
+        pointsTable = [fp27, fp28, fp29, fp30, fp31, fp32, fp33, fp34, fp35, fp36, fp37, fp38, fp39, fp40, fp41, fp42,
+                       fp43, fp44, fp45, fp46, fp47, fp48, fp49, fp50, fp51, fp52, fp53, fp54, fp55, fp56, fp57, fp58,
+                       fp59, fp60, fp61, fp62, fp63, fp64, fp65, fp66]
+        for singlePoint in pointsTable:
+            r1 = singlePoint[0] / width
+            r2 = singlePoint[1] / height
+            singleReturnArrayFinal.append(r1)
+            singleReturnArrayFinal.append(r2)
+        #####################################################################################################################
+        if (isSickCollection == 0 or isSickCollection == 2):
+            singleReturnArrayFinal.append(0)
+        else:
+            singleReturnArrayFinal.append(1)
+
+        outputDataArray.append(singleReturnArrayFinal)
+
+        cv2.imwrite(pathCore + pathlib.Path(member.fileName).name, member.alignedImage)
+    print("dlugosc wektora z wydobytymi danymi: " + str(len(outputDataArray)))
+    for x in outputDataArray:
+        print(x)
+
+    if isSickCollection == 1:  # chorzy uczacy
+        # if not (pathlib.Path("ExposedData_Sick.txt").is_file()):
+        with open('ExposedData_Sick_TOTAL.txt', 'w') as filehandle:
+            json.dump(outputDataArray, filehandle)
+
+    elif (isSickCollection == 0):  # zdrowi
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Healthy_TOTAL.txt', 'w') as filehandle:
+            json.dump(outputDataArray, filehandle)
+    elif (isSickCollection == 2):  # zdrowi testowi
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Healthy_TOTAL_test.txt', 'w') as filehandle:
+            json.dump(outputDataArray, filehandle)
+    elif (isSickCollection == 3):  # chorzy testowi
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Sick_TOTAL_test.txt', 'w') as filehandle:
+            json.dump(outputDataArray, filehandle)
+
+    aData = []
 
 
 #
@@ -1078,11 +1528,23 @@ def preprecessCorrectedFaceAngles(aData, isSickCollection, path):
 # preprecessCorrectedFaceParts(analysedData, 3, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 
 # extractData()
-
+#
 # kNearestClassifierLarning()
 
 # gaussianNaiveBayessLearning()
 
+
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Uczacy/Negatywne/*")
+# preprecessCorrectedFacePartsAndAngles(analysedData, 0, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+# #
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Uczacy/Pozytywne/*")
+# preprecessCorrectedFacePartsAndAngles(analysedData, 1, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+
+
+researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Negatywne/*")
+preprecessCorrectedFacePartsAndAngles(analysedData, 2, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+#
+#
 researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Pozytywne/Ciezkie/*")
-preprecessCorrectedFaceAngles(analysedData, 3, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+preprecessCorrectedFacePartsAndAngles(analysedData, 3, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 file.close()
