@@ -64,8 +64,11 @@ n_classes = 1
 batch_size = 92
 hm_epochs = 10
 
+n_input = x_data.shape[1]
+n_classes = y_data.shape[1]
+
 x = tf.placeholder('float', [None, 92])
-y = tf.placeholder('float')
+y = tf.placeholder('float', [None, n_classes])
 
 
 def neural_network_model(data):
@@ -117,7 +120,7 @@ def train_neural_network(x):
                                 })
                 avg_cost += c / total_batch
 
-            print("Epoch:", '%04d' % (epoch + 1), "cost=", \
+            print("Epoch:", '%04d' % (epoch + 1), "cost=",
                   "{:.9f}".format(avg_cost))
         print("Optimization Finished!")
         correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
