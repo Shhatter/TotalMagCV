@@ -47,6 +47,37 @@ postTestNeg_Feature, postTestNeg_Labels = fetchData("ExposedData_Healthy_TOTAL_t
 
 x_data_test = np.concatenate((postTestHard_Feature, postTestNeg_Feature), axis=0)
 y_data_test = np.concatenate((postTestHard_Labels, postTestNeg_Labels), axis=0)
+trainer = []
+for x in y_data:
+    if (x[0] == 0):
+        trainer.append([0, 1])
+    else:
+        # x = [1, 0]
+        trainer.append([1, 0])
+
+trainer = np.array(trainer)
+
+# print (trainer)
+y_data = trainer
+
+trainer = []
+for y in y_data_test:
+    if (y[0] == 0):
+        trainer.append([0, 1])
+    else:
+        # x = [1, 0]
+        trainer.append([1, 0])
+trainer = np.array(trainer)
+
+# print (trainer)
+y_data_test = trainer
+
+print(x_data.shape)
+
+# x_data = tf.convert_to_tensor(x_data, np.float32)
+# y_data = tf.convert_to_tensor(y_data, np.float32)
+# x_data_test = tf.convert_to_tensor(x_data_test, np.float32)
+# y_data_test = tf.convert_to_tensor(y_data_test, np.float32)
 
 '''
 
@@ -59,10 +90,10 @@ y_data_test = np.concatenate((postTestHard_Labels, postTestNeg_Labels), axis=0)
 n_nodes_hl1 = 70
 n_nodes_hl2 = 50
 n_nodes_hl3 = 30
-n_classes = 1
+# n_classes = 1
 
 batch_size = 92
-hm_epochs = 10
+hm_epochs = 50000
 
 n_input = x_data.shape[1]
 n_classes = y_data.shape[1]
