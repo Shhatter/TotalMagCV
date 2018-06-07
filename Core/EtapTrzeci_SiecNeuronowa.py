@@ -104,23 +104,25 @@ def train_neural_network(x):
         sess.run(tf.global_variables_initializer())
 
         for epoch in range(hm_epochs):
-
+            avg_cost = 0.0
             total_batch = int(len(x_data) / batch_size)
             x_batches = np.array_split(x_data, total_batch)
             y_batches = np.array_split(y_data, total_batch)
-            epoch_loss = 0
-            # for _ in range(int(x_data/batch_size)):
-            #     x,y = x_data.next
-
             for i in range(total_batch):
-                epoch_x, epoch_y = x_batches[i], y_batches[i]
-                _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
-                epoch_loss += c / total_batch
-            print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
-        correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
+                batch_x, batch_y = x_batches[i], y_batches[i]
+                _, c = sess.run([optimizer, cost],
+                                feed_dict={
+                                    x: batch_x,
+                                    y: batch_y
+                                })
+                avg_cost += c / total_batch
 
-        accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        print('Accuracy:', accuracy.eval({x: x_data_test, y: y_data_test}))
+            print("Epoch:", '%04d' % (epoch + 1), "cost=", \
+                  "{:.9f}".format(avg_cost))
+        print("Optimization Finished!")
+        correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+        print("Accuracy:", accuracy.eval({x: x_data_test, y: y_data_test}))
 
 
 train_neural_network(x)
