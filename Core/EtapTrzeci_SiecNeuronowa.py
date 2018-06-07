@@ -1,6 +1,7 @@
 import json
 import tensorflow as tf
 import numpy as np
+from tensorflow.examples.tutorials.mnist import input_data
 
 '''
 postTestLight_Feature
@@ -22,7 +23,7 @@ neg_Labels
 def fetchData(filepath):
     with open(filepath, "r")as filehandler:
         rawData = np.array(json.load(filehandler))
-        print("Data fom file: %s total dataset size = %d" % (filepath, len(rawData)))
+        print("Data from file: %s total dataset size = %d" % (filepath, len(rawData)))
         length = len(rawData[0]) - 1
         features = rawData[:, range(0, length)]
         labels = rawData[:, length]
@@ -30,61 +31,6 @@ def fetchData(filepath):
 
     return features, labels
 
-
-def extractData(typeOfData):
-    global positiveData, negativeData, positiveDataTest, negativeDataTest
-    if typeOfData == "total":
-        with open("ExposedData_Sick_TOTAL.txt", "r")as filehandle:
-            positiveData = json.load(filehandle)
-
-        print(len(positiveData))
-        print(positiveData)
-
-        with open('ExposedData_Healthy_TOTAL.txt', 'r') as filehandle:
-            negativeData = json.load(filehandle)
-        print(len(positiveData))
-        print(negativeData)
-
-        with open("ExposedData_Healthy_TOTAL_test.txt", "r")as filehandle:
-            positiveData = json.load(filehandle)
-
-        print(len(positiveData))
-        print(positiveData)
-
-        with open('ExposedData_Healthy_TOTAL_test.txt', 'r') as filehandle:
-            negativeData = json.load(filehandle)
-        print(len(positiveData))
-        print(negativeData)
-
-    else:
-        with open("ExposedData_Sick.txt", "r")as filehandle:
-            positiveData = json.load(filehandle)
-
-        print(positiveData)
-
-        with open('ExposedData_Healthy.txt', 'r') as filehandle:
-            negativeData = json.load(filehandle)
-        print(negativeData)
-        #######################
-        with open('ExposedData_Sick_test.txt', 'r') as filehandle:
-            positiveDataTest = json.load(filehandle)
-        print(positiveDataTest)
-        with open('ExposedData_Healthy_test.txt', 'r') as filehandle:
-            negativeDataTest = json.load(filehandle)
-        print(negativeDataTest)
-
-
-# extractData("total")
-
-training_epochs = 500
-learning_rate = 0.0001
-batch_size = 100
-display_step = 1
-
-n_input = 92
-n_hidden_1 = 70
-n_hidden_2 = 30
-n_classes = 1
 
 pos_Feature, pos_labels = fetchData("ExposedData_Sick_TOTAL.txt")
 
@@ -102,6 +48,94 @@ postTestNeg_Feature, postTestNeg_Labels = fetchData("ExposedData_Healthy_TOTAL_t
 x_data_test = np.concatenate((postTestHard_Feature, postTestNeg_Feature), axis=0)
 y_data_test = np.concatenate((postTestHard_Labels, postTestNeg_Labels), axis=0)
 
+'''
+
+
+
+
+
+'''
+
+n_nodes_hl1 = 70
+n_nodes_hl2 = 50
+n_nodes_hl3 = 30
+n_classes = 1
+
+batch_size = 92
+hm_epochs = 10
+
+x = tf.placeholder('float', [None, 92])
+y = tf.placeholder('float')
+
+
+def neural_network_model(data):
+    hidden_1_layer = {'weights': tf.Variable(tf.random_normal([92, n_nodes_hl1])),
+                      'biases': tf.Variable(tf.random_normal([n_nodes_hl1]))}
+    hidden_2_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl1, n_nodes_hl2])),
+                      'biases': tf.Variable(tf.random_normal([n_nodes_hl2]))}
+    hidden_3_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl2, n_nodes_hl3])),
+                      'biases': tf.Variable(tf.random_normal([n_nodes_hl3]))}
+    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_classes])),
+                    'biases': tf.Variable(tf.random_normal([n_classes]))}
+
+    l1 = tf.add(tf.matmul(data, hidden_1_layer['weights']), hidden_1_layer['biases'])
+    l1 = tf.nn.relu(l1)
+
+    l2 = tf.add(tf.matmul(l1, hidden_2_layer['weights']), hidden_2_layer['biases'])
+    l2 = tf.nn.relu(l2)
+
+    l3 = tf.add(tf.matmul(l2, hidden_3_layer['weights']), hidden_3_layer['biases'])
+    l3 = tf.nn.relu(l3)
+
+    output = tf.matmul(l3, output_layer['weights'] + output_layer['biases'])
+
+    return output
+
+
+def train_neural_network(x):
+    prediction = neural_network_model(x)
+    # OLD VERSION:
+    # cost = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(prediction,y) )
+    # NEW:
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y))
+    optimizer = tf.train.AdamOptimizer().minimize(cost)
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        for epoch in range(hm_epochs):
+
+            total_batch = int(len(x_data) / batch_size)
+            x_batches = np.array_split(x_data, total_batch)
+            y_batches = np.array_split(y_data, total_batch)
+            epoch_loss = 0
+            # for _ in range(int(x_data/batch_size)):
+            #     x,y = x_data.next
+
+            for i in range(total_batch):
+                epoch_x, epoch_y = x_batches[i], y_batches[i]
+                _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
+                epoch_loss += c / total_batch
+            print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:', epoch_loss)
+        correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
+
+        accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
+        print('Accuracy:', accuracy.eval({x: x_data_test, y: y_data_test}))
+
+
+train_neural_network(x)
+
+'''
+training_epochs = 500
+learning_rate = 0.0001
+batch_size = 100
+display_step = 1
+
+n_input = 92
+n_hidden_1 = 70
+n_hidden_2 = 30
+n_classes = 1
+
 X = tf.placeholder(tf.float32)
 Y = tf.placeholder(tf.float32)
 
@@ -116,6 +150,13 @@ biases = {
     'b2': tf.Variable(tf.random_normal([n_hidden_2])),
     'out': tf.Variable(tf.random_normal([n_classes]))
 }
+
+
+
+
+
+
+
 
 
 def multilayer_perceptron(x):
@@ -165,3 +206,5 @@ with tf.Session() as sess:
     # Calculate accuracy
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
     print("Accuracy:", accuracy.eval({X: mnist.test.images, Y: mnist.test.labels}))
+    
+'''
