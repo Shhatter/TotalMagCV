@@ -1548,3 +1548,13 @@ preprecessCorrectedFacePartsAndAngles(analysedData, 2, "Proby Etapu trzeciego/Uc
 researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Pozytywne/Ciezkie/*")
 preprecessCorrectedFacePartsAndAngles(analysedData, 3, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 file.close()
+
+'''
+0-5 porównanie części twarzy : 
+fałdek nosowych, kącików ust, kącików oczu, dolnej powieki oraz przekroju ust
+6-12 różne kąty pomiędzy interesującymi częściami twarzy z czego: 
+(oczy,nos),(dolna część nosa,nos), (usta,nos),(lewarozwartosc ust),(prawa rozwartosc ust ),(lewy kacik,nos),(prawy kacik,nos)
+13-91 punkty(x,y) opisujące części twarzy w kolejności : 
+nos(4),dolna czesc nosa(5),lewe oko(6),prawe oko (6),usta(20)
+ostatni punkt określa klasę obiektu (0,1)
+'''
