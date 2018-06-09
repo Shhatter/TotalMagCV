@@ -17,7 +17,15 @@ from skimage.measure import compare_ssim as ssim
 from skimage.color import rgb2gray
 from sklearn.preprocessing import MinMaxScaler
 import json
-
+from skimage import filters
+from skimage.color import rgb2gray
+from skimage import data
+from skimage.util.dtype import dtype_range
+from skimage.util import img_as_ubyte
+from skimage import exposure
+from skimage.morphology import disk
+from skimage.filters import rank
+from skimage.filters import gaussian_filter
 from sklearn import datasets
 from skimage import exposure
 from sklearn.model_selection import train_test_split
@@ -112,7 +120,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
     global badResult, goodResult
 
     inputFile = cv2.imread(inputFilePath)
-    inputFile = imutils.resize(inputFile, 1000)
+    inputFile = imutils.resize(inputFile, 1100)
     # height, width = inputFile.shape[:2]
     # if (width < 600 or height < 600):
     #     inputFile = imutils.resize(inputFile, 1000)
@@ -264,7 +272,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         # cv2.waitKey(0)
 
         #     obliczanie czy twarz jest przechylonwa wzdłuż jaw
-        fa = FaceAligner(predictor, desiredFaceWidth=width, desiredFaceHeight=height)
+        fa = FaceAligner(predictor, desiredFaceWidth=width, desiredFaceHeight=height, desiredLeftEye=(0.39, 0.39))
         faceOrig = imutils.resize(inputFile[y:y + h, x:x + w], width=256)
         xCenter = (int)((w / 2) + x)
         yCenter = (int)((h / 2) + y)
@@ -414,6 +422,7 @@ def lowestValue(entry):
 
 def toGray(colorimg):
     gray = cv2.cvtColor(colorimg, cv2.COLOR_BGR2GRAY)
+    gray = rgb2gray(colorimg)
     return gray
 
 
@@ -1078,6 +1087,7 @@ def preprecessCorrectedFaceAngles(aData, isSickCollection, path):
 
 def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
     global getXTime
+    global analysedData
     getTimeFolderPersons = datetime.datetime.now()
     pathCore = path + getXTime + " EXTRACTED DATA " + "\\"
     getXTime = str(getTimeFolderPersons.strftime("%Y-%m-%d - %H-%M-%S"))
@@ -1093,6 +1103,7 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         member.printer()
 
         cleanImage = member.alignedImage.copy()
+        cleanImage = rgb2gray(cleanImage)
         # member.alignedImage
         height, width = member.alignedImage.shape[:2]
         print(height, width)
@@ -1407,29 +1418,62 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         # dobieranie rozmiaru   :)
         ##########################################
         ##########################################
-        leftNosePartGRAY = toGray(leftNosePart)
-        rightNosePartREVGRAY = toGray(rightNosePartREV)
-        leftMounthEdgeGRAY = toGray(leftMounthEdge)
-        rightMounthEdgeREVGRAY = toGray(rightMounthEdgeREV)
-        leftEyeEdgeGRAY = toGray(leftEyeEdge)
-        rightEyeEdgeREVGRAY = toGray(rightEyeEdgeREV)
-        leftUnderEyeGRAY = toGray(leftUnderEye)
-        rightUnderEyeREVGRAY = toGray(rightUnderEyeREV)
-        mounthLeftPartGRAY = toGray(mounthLeftPart)
-        mounthRightPartREVGRAY = toGray(mounthRightPartREV)
+        # leftNosePartGRAY = toGray(leftNosePart)
+        # rightNosePartREVGRAY = toGray(rightNosePartREV)
+        # leftMounthEdgeGRAY = toGray(leftMounthEdge)
+        # rightMounthEdgeREVGRAY = toGray(rightMounthEdgeREV)
+        # leftEyeEdgeGRAY = toGray(leftEyeEdge)
+        # rightEyeEdgeREVGRAY = toGray(rightEyeEdgeREV)
+        # leftUnderEyeGRAY = toGray(leftUnderEye)
+        # rightUnderEyeREVGRAY = toGray(rightUnderEyeREV)
+        # mounthLeftPartGRAY = toGray(mounthLeftPart)
+        # mounthRightPartREVGRAY = toGray(mounthRightPartREV)
 
-        leftNosePartGRAY, rightNosePartREVGRAY = resizeImagestToSameLevel(leftNosePartGRAY, rightNosePartREVGRAY)
-        leftMounthEdgeGRAY, rightMounthEdgeREVGRAY = resizeImagestToSameLevel(leftMounthEdgeGRAY,
-                                                                              rightMounthEdgeREVGRAY)
-        leftEyeEdgeGRAY, rightEyeEdgeREVGRAY = resizeImagestToSameLevel(leftEyeEdgeGRAY, rightEyeEdgeREVGRAY)
-        leftUnderEyeGRAY, rightUnderEyeREVGRAY = resizeImagestToSameLevel(leftUnderEyeGRAY, rightUnderEyeREVGRAY)
-        mounthLeftPartGRAY, mounthRightPartREVGRAY = resizeImagestToSameLevel(mounthLeftPartGRAY,
-                                                                              mounthRightPartREVGRAY)
+        leftNosePartGRAY, rightNosePartREVGRAY = resizeImagestToSameLevel(leftNosePart, rightNosePartREV)
+        leftMounthEdgeGRAY, rightMounthEdgeREVGRAY = resizeImagestToSameLevel(leftMounthEdge,
+                                                                              rightMounthEdgeREV)
+        leftEyeEdgeGRAY, rightEyeEdgeREVGRAY = resizeImagestToSameLevel(leftEyeEdge, rightEyeEdgeREV)
+        leftUnderEyeGRAY, rightUnderEyeREVGRAY = resizeImagestToSameLevel(leftUnderEye, rightUnderEyeREV)
+        mounthLeftPartGRAY, mounthRightPartREVGRAY = resizeImagestToSameLevel(mounthLeftPart,
+                                                                              mounthRightPartREV)
 
         analysedParts = [[leftNosePartGRAY, rightNosePartREVGRAY], [leftMounthEdgeGRAY, rightMounthEdgeREVGRAY],
                          [leftEyeEdgeGRAY, rightEyeEdgeREVGRAY], [leftUnderEyeGRAY, rightUnderEyeREVGRAY],
                          [mounthLeftPartGRAY, mounthRightPartREVGRAY]]
+        ######################################################################################################################
 
+        # core = imutils.resize(cleanImage,width=500)
+        # cv2.imshow("pre", core)
+        # core = toGray(core)
+        # cv2.imshow("grayscale", core)
+        # # cv2.imshow("1 pre", singlePair[1])
+        # # cv2.waitKey(0)
+        # g1 = filters.gaussian(core, 0.5, multichannel=False, mode='reflect')
+        #
+        #
+        #
+        # # cv2.imshow("0 post", g1)
+        # # cv2.imshow("1 post", g2)
+        #
+        # gamma_corrected = exposure.adjust_gamma(core, 2)
+        # cv2.imshow("overall", gamma_corrected)
+        #
+        # # Logarithmic
+        # logarithmic_corrected = exposure.adjust_log(core, 1)
+        # cv2.imshow("log", logarithmic_corrected)
+        #
+        # # Global equalize
+        # img_rescale = exposure.equalize_hist(core)
+        # cv2.imshow("global equalize", img_rescale)
+        #
+        # # Equalization
+        # selem = disk(30)
+        # img_eq = rank.equalize(core, selem=selem)
+        # cv2.imshow("local equalize", img_eq)
+        #
+        # cv2.waitKey(0)
+
+        ######################################################################################################################
         singleReturnArray = []
         for singleComparasion in analysedParts:
             singleReturnArray.append(compare_images(singleComparasion[0], singleComparasion[1], "placki"))
@@ -1482,21 +1526,28 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         # if not (pathlib.Path("ExposedData_Sick.txt").is_file()):
         with open('ExposedData_Sick_TOTAL.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
-
+            aData = []
     elif (isSickCollection == 0):  # zdrowi
         # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
         with open('ExposedData_Healthy_TOTAL.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
+            aData = []
     elif (isSickCollection == 2):  # zdrowi testowi
         # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
         with open('ExposedData_Healthy_TOTAL_test.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
+            aData = []
     elif (isSickCollection == 3):  # chorzy testowi
         # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
-        with open('ExposedData_Sick_TOTAL_test.txt', 'w') as filehandle:
+        with open('ExposedData_Sick_TOTAL_HARD_test.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
-
-    aData = []
+            aData = []
+    elif (isSickCollection == 4):  # chorzy testowi
+        # if not (pathlib.Path("ExposedData_Healthy.txt").is_file()):
+        with open('ExposedData_Sick_TOTAL_SOFT_test.txt', 'w') as filehandle:
+            json.dump(outputDataArray, filehandle)
+            aData = []
+    analysedData = []
 
 
 #
@@ -1541,13 +1592,25 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
 # preprecessCorrectedFacePartsAndAngles(analysedData, 1, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 
 
-researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Negatywne/*")
-preprecessCorrectedFacePartsAndAngles(analysedData, 2, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Uczacy/Negatywne/*")
+# preprecessCorrectedFacePartsAndAngles(analysedData, 0, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+#
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Uczacy/Pozytywne/*")
+# preprecessCorrectedFacePartsAndAngles(analysedData, 1, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+
+
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Negatywne/*")
+# preprecessCorrectedFacePartsAndAngles(analysedData, 2, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+# #
+# #
+# researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Pozytywne/Ciezkie/*")
+# preprecessCorrectedFacePartsAndAngles(analysedData, 3, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 #
 #
-researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Pozytywne/Ciezkie/*")
-preprecessCorrectedFacePartsAndAngles(analysedData, 3, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
-file.close()
+researchOrderer("HOG", "HEALTHY", 0, "Proby Etapu trzeciego/Testowy/Pozytywne/Lekkie/*")
+preprecessCorrectedFacePartsAndAngles(analysedData, 4, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+# file.close()
+
 
 '''
 0-5 porównanie części twarzy : 

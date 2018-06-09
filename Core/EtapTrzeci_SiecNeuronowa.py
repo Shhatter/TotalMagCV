@@ -41,12 +41,13 @@ y_data = np.concatenate((pos_labels, neg_Labels), axis=0)
 # print(y_data)
 
 
-postTestHard_Feature, postTestHard_Labels = fetchData("ExposedData_Sick_TOTAL_test.txt")
+postTestHard_Feature, postTestHard_Labels = fetchData("ExposedData_Sick_TOTAL_HARD_test.txt")
+postTestLight_Feature, postTestLight_Labels = fetchData("ExposedData_Sick_TOTAL_SOFT_test.txt")
 
 postTestNeg_Feature, postTestNeg_Labels = fetchData("ExposedData_Healthy_TOTAL_test.txt")
 
-x_data_test = np.concatenate((postTestHard_Feature, postTestNeg_Feature), axis=0)
-y_data_test = np.concatenate((postTestHard_Labels, postTestNeg_Labels), axis=0)
+x_data_test = np.concatenate((postTestHard_Feature, postTestNeg_Feature, postTestLight_Feature), axis=0)
+y_data_test = np.concatenate((postTestHard_Labels, postTestNeg_Labels, postTestLight_Labels), axis=0)
 trainer = []
 for x in y_data:
     if (x[0] == 0):
@@ -73,6 +74,7 @@ trainer = np.array(trainer)
 y_data_test = trainer
 
 print(x_data.shape)
+print(y_data_test)
 
 # x_data = tf.convert_to_tensor(x_data, np.float32)
 # y_data = tf.convert_to_tensor(y_data, np.float32)
@@ -86,14 +88,66 @@ print(x_data.shape)
 
 
 '''
+# n_nodes_hl1 = 70
+# n_nodes_hl2 = 50
+# n_nodes_hl3 = 30
 
-n_nodes_hl1 = 70
-n_nodes_hl2 = 50
-n_nodes_hl3 = 30
+# n_nodes_hl1 = 500
+# n_nodes_hl2 = 400
+# n_nodes_hl3 = 300
+# n_nodes_hl4 = 100
+'''
+n_nodes_hl1 = 500
+n_nodes_hl2 = 400
+n_nodes_hl3 = 300
+n_nodes_hl4 = 100
+Epoch: 10000 cost= 0.174207214
+Optimization Finished!
+Accuracy: 0.7754237
+
+'''
+
+'''
+n_nodes_hl1 = 500
+n_nodes_hl2 = 400
+n_nodes_hl3 = 300
+n_nodes_hl4 = 100
+Epoch: 10000 cost= 0.174207214
+Optimization Finished!
+Accuracy: 0.7245763
+
+ z sigmoidami wszędzie 
+'''
+'''
+n_nodes_hl1 = 700
+n_nodes_hl2 = 500
+n_nodes_hl3 = 500
+n_nodes_hl4 = 150
+Optimization Finished!
+Accuracy: 0.7372881
+'''
+
+'''
+n_nodes_hl1 = 150
+n_nodes_hl2 = 100
+n_nodes_hl3 = 92
+n_nodes_hl4 = 50
+Optimization Finished!
+Accuracy: 0.78571427
+
+# n_nodes_hl1 = 500
+# n_nodes_hl2 = 400
+# n_nodes_hl3 = 300
+TEŻ BYŁO SPOKOOO
+'''
+n_nodes_hl1 = 150
+n_nodes_hl2 = 100
+n_nodes_hl3 = 92
+n_nodes_hl4 = 50
 # n_classes = 1
 
 batch_size = 92
-hm_epochs = 50000
+hm_epochs = 10000
 
 n_input = x_data.shape[1]
 n_classes = y_data.shape[1]
@@ -109,19 +163,25 @@ def neural_network_model(data):
                       'biases': tf.Variable(tf.random_normal([n_nodes_hl2]))}
     hidden_3_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl2, n_nodes_hl3])),
                       'biases': tf.Variable(tf.random_normal([n_nodes_hl3]))}
-    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_classes])),
+
+    hidden_4_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_nodes_hl4])),
+                      'biases': tf.Variable(tf.random_normal([n_nodes_hl4]))}
+    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl4, n_classes])),
                     'biases': tf.Variable(tf.random_normal([n_classes]))}
 
     l1 = tf.add(tf.matmul(data, hidden_1_layer['weights']), hidden_1_layer['biases'])
-    l1 = tf.nn.relu(l1)
+    l1 = tf.nn.sigmoid(l1)
 
     l2 = tf.add(tf.matmul(l1, hidden_2_layer['weights']), hidden_2_layer['biases'])
-    l2 = tf.nn.relu(l2)
+    l2 = tf.nn.sigmoid(l2)
 
     l3 = tf.add(tf.matmul(l2, hidden_3_layer['weights']), hidden_3_layer['biases'])
-    l3 = tf.nn.relu(l3)
+    l3 = tf.nn.sigmoid(l3)
 
-    output = tf.matmul(l3, output_layer['weights'] + output_layer['biases'])
+    l4 = tf.add(tf.matmul(l3, hidden_4_layer['weights']), hidden_4_layer['biases'])
+    l4 = tf.nn.sigmoid(l4)
+
+    output = tf.matmul(l4, output_layer['weights'] + output_layer['biases'])
 
     return output
 
@@ -131,7 +191,7 @@ def train_neural_network(x):
     # OLD VERSION:
     # cost = tf.reduce_mean( tf.nn.softmax_cross_entropy_with_logits(prediction,y) )
     # NEW:
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction, labels=y))
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=prediction, labels=y))
     optimizer = tf.train.AdamOptimizer().minimize(cost)
 
     with tf.Session() as sess:
@@ -159,88 +219,7 @@ def train_neural_network(x):
         print("Accuracy:", accuracy.eval({x: x_data_test, y: y_data_test}))
 
 
+# how to save model
+
 train_neural_network(x)
 
-'''
-training_epochs = 500
-learning_rate = 0.0001
-batch_size = 100
-display_step = 1
-
-n_input = 92
-n_hidden_1 = 70
-n_hidden_2 = 30
-n_classes = 1
-
-X = tf.placeholder(tf.float32)
-Y = tf.placeholder(tf.float32)
-
-weights = {
-    'h1': tf.Variable(tf.random_normal([n_input, n_hidden_1])),
-    'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
-    'out': tf.Variable(tf.random_normal([n_hidden_2, n_classes]))
-}
-
-biases = {
-    'b1': tf.Variable(tf.random_normal([n_hidden_1])),
-    'b2': tf.Variable(tf.random_normal([n_hidden_2])),
-    'out': tf.Variable(tf.random_normal([n_classes]))
-}
-
-
-
-
-
-
-
-
-
-def multilayer_perceptron(x):
-    # Hidden fully connected layer with 256 neurons
-    layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
-    # Hidden fully connected layer with 256 neurons
-    layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
-    # Output fully connected layer with a neuron for each class
-    out_layer = tf.matmul(layer_2, weights['out']) + biases['out']
-    return out_layer
-
-
-# Construct model
-logits = multilayer_perceptron(X)
-
-# Define loss and optimizer
-loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-    logits=logits, labels=Y))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-train_op = optimizer.minimize(loss_op)
-# Initializing the variables
-init = tf.global_variables_initializer()
-
-with tf.Session() as sess:
-    sess.run(init)
-
-    # Training cycle
-    for epoch in range(training_epochs):
-        avg_cost = 0.
-        total_batch = int(mnist.train.num_examples / batch_size)
-        # Loop over all batches
-        for i in range(total_batch):
-            batch_x, batch_y = mnist.train.next_batch(batch_size)
-            # Run optimization op (backprop) and cost op (to get loss value)
-            _, c = sess.run([train_op, loss_op], feed_dict={X: batch_x,
-                                                            Y: batch_y})
-            # Compute average loss
-            avg_cost += c / total_batch
-        # Display logs per epoch step
-        if epoch % display_step == 0:
-            print("Epoch:", '%04d' % (epoch + 1), "cost={:.9f}".format(avg_cost))
-    print("Optimization Finished!")
-
-    # Test model
-    pred = tf.nn.softmax(logits)  # Apply softmax to logits
-    correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(Y, 1))
-    # Calculate accuracy
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-    print("Accuracy:", accuracy.eval({X: mnist.test.images, Y: mnist.test.labels}))
-    
-'''
