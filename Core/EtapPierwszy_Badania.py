@@ -8,26 +8,30 @@ import imutils
 import numpy as np
 import shutil
 import datetime
+import tensorflow as tf
 # OPEN CV
 import os
 from imutils import face_utils
 from mtcnn.mtcnn import MTCNN
+from mtcnn_facematch import detect_face
 from time import sleep
 import argparse
 
 from skimage import io
 
+sess = tf.Session()
+# read pnet, rnet, onet models from align directory and files are det1.npy, det2.npy, det3.npy
+pnet, rnet, onet = detect_face.create_mtcnn(sess, 'align')
 ###STAŁE
-predictor_path = "landmark/sp.dat"
+predictor_path = "landmark/shape_predictor_68_face_landmarks.dat"
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(predictor_path)
-net = cv2.dnn.readNetFromCaffe("landmark/deploy.prototxt.txt", "landmark/res10_300x300_ssd_iter_140000.caffemodel")
+# net = cv2.dnn.readNetFromCaffe("landmark/deploy.prototxt.txt", "landmark/res10_300x300_ssd_iter_140000.caffemodel")
 mmod_path = "landmark/mmod_human_face_detector.dat"
 cnnFaceDetector = dlib.cnn_face_detection_model_v1("landmark/mmod_human_face_detector.dat")
 
 # Core/landmark/vgg_face_caffe/vgg_face_caffe/VGG_FACE_deploy.prototxt
 # net = cv2.dnn.readNetFromCaffe("landmark/PAM_frontal_AlexNet/PAM_frontal_deploy.prototxt.txt", "landmark/PAM_frontal_AlexNet/snap__iter_100000.caffemodel")
-
 
 
 faceFolderPath = "Pozytywne/*"
@@ -63,87 +67,95 @@ badDeepLearning = 0
 getTime = str(datetime.datetime.now().ctime())
 if not (pathlib.Path("LogFile_Etap2.txt").is_file()):
     # os.mknod("/LogFile.txt",0)
-    file = open("LogFile_Etap2.txt", 'a')
+    file = open("LogFile.txt", 'a')
     file.writelines(
         "\n##################################################################### " + "\nTest : " + getTime + "\n\n")
 else:
-    file = open("LogFile_Etap2.txt", 'a')
+    file = open("LogFile.txt", 'a')
     file.writelines(
         "\n##################################################################### " + "\nTest : " + getTime + "\n\n")
 
 
-# def removeAllResults(value):
-#     if value == 0:
-#         shutil.rmtree('WynikiAnalizy\\Haar Cascade\\Zle\\')
-#         os.mkdir('WynikiAnalizy\\Haar Cascade\\Zle\\')
-#         shutil.rmtree('WynikiAnalizy\\Haar Cascade\\Dobre\\')
-#         os.mkdir('WynikiAnalizy\\Haar Cascade\\Dobre\\')
-#     elif value == 10:
-#         for i in range(1, 11, 1):
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\Haar\\Dobre")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\Haar\\Zle")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\Haar\\Dobre")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\Haar\\Zle")
-#
-#     elif value == 11:
-#         for i in range(1, 11, 1):
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\LBP\\Dobre")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\LBP\\Zle")
-#
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\LBP\\Dobre")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\LBP\\Zle")
-#
-#     elif value == 12:
-#         for i in range(1, 11, 1):
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\HOG\\Dobre")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\HOG\\Zle")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\HOG\\Dobre")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\HOG\\Zle")
-#     elif value == 13:
-#         for i in range(1, 11, 1):
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\DeepLearning\\Dobre")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\DeepLearning\\Zle")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\DeepLearning\\Dobre")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\DeepLearning\\Zle")
-#     elif value == 14:
-#         for i in range(1, 11, 1):
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\TensorFlow\\Dobre")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\TensorFlow\\Zle")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\TensorFlow\\Dobre")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\TensorFlow\\Zle")
-#
-#
-#
-#     elif value == 1:
-#         shutil.rmtree('WynikiAnalizy\\LBP\\Zle\\')
-#         os.mkdir('WynikiAnalizy\\LBP\\Zle\\')
-#         shutil.rmtree('WynikiAnalizy\\LBP\\Dobre\\')
-#         os.mkdir('WynikiAnalizy\\LBP\\Dobre\\')
-#     elif value == 2:
-#         shutil.rmtree('WynikiAnalizy\\Dlib\\Zle\\')
-#         os.mkdir('WynikiAnalizy\\Dlib\\Zle\\')
-#         shutil.rmtree('WynikiAnalizy\\Dlib\\Dobre\\')
-#         os.mkdir('WynikiAnalizy\\Dlib\\Dobre\\')
-#     elif value == 3:
-#         print("Single Shot Detector ")
-#     elif value == 4:
-#         print("FaceNet")
-#     elif value == 10:
-#         print("CLEAR ALL PERSON FOLDERS !")
-#         for i in range(1, 11, 1):
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\Haar\\Dobre")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\Haar\\Zle")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\HOG\\Dobre")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\HOG\\Zle")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\LBP\\Dobre")
-#             shutil.rmtree("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\LBP\\Zle")
-#
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\Haar\\Dobre")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\Haar\\Zle")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\HOG\\Dobre")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\HOG\\Zle")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\LBP\\Dobre")
-#             os.mkdir("WynikiAnalizy\\ProbkiBadawcze\\Osoba" + str(i) + "\\LBP\\Zle")
+def getFace(inputFilePath, threshold, factor, goodPath, badPath):
+    global goodResult, badResult
+    inputFile = cv2.imread(inputFilePath)
+    inputFile = imutils.resize(inputFile, width=1100)
+    faces = []
+    height, width = inputFile.shape[:2]
+    bounding_boxes, _ = detect_face.detect_face(inputFile, int(width * 0.2), pnet, rnet, onet, threshold, factor)
+
+    if (len(bounding_boxes) == 0):
+        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imshow("image", inputFile)
+        # cv2.waitKey(0)
+        badResult += 1
+
+    elif (len(bounding_boxes) == 1):
+        if (bounding_boxes[0][4] > 0.7):
+            x, y, wPoint, hPoint = int(bounding_boxes[0][0]), int(bounding_boxes[0][1]), int(bounding_boxes[0][2]), int(
+                bounding_boxes[0][3])
+
+            if x < 0:
+                x = 0
+            elif x > width:
+                x = width - 1
+
+            if (y < 0):
+                y = 0
+            elif y > height:
+                y = height - 1
+
+            if wPoint < 0:
+                wPoint = 0
+            elif wPoint > width:
+                wPoint = width - 1
+
+            if (hPoint < 0):
+                hPoint = 0
+            elif hPoint > height:
+                hPoint = height - 1
+
+            cv2.rectangle(inputFile, (x, y),
+                          (wPoint, hPoint), (0, 255, 0), 2)
+            goodResult += 1
+
+            cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+
+    elif (len(bounding_boxes) != 1):
+
+        highest = bounding_boxes[0]
+        for i in range(1, len(bounding_boxes), 1):
+            if (bounding_boxes[i][4] > highest[4]):
+                highest = bounding_boxes[i]
+
+        for a in range(0, 4, 1):
+            highest[a] = int(highest[a])
+
+        if highest[0] < 0:
+            highest[0] = 0
+        elif highest[0] > width:
+            highest[0] = width - 1
+
+        if (highest[1] < 0):
+            highest[1] = 0
+        elif highest[1] > height:
+            highest[1] = height - 1
+
+        if highest[2] < 0:
+            highest[2] = 0
+        elif highest[2] > width:
+            highest[2] = width - 1
+
+        if (highest[3] < 0):
+            highest[3] = 0
+        elif highest[3] > height:
+            highest[3] = height - 1
+
+        cv2.rectangle(inputFile, (int(highest[0]), int(highest[1])),
+                      (int(highest[2]), int(highest[3])), (0, 255, 0), 2)
+        goodResult += 1
+
+        cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
 
 
 def haarCascadeFaceDetector(inputFilePath, scaleFactor, neighbours, goodPath, badPath):
@@ -342,44 +354,45 @@ def mtcnnDetector(inputFilePath, goodPath, badPath):
     cv2.waitKey(0)
 
 
-def caffeDeepLearningDetector(inputFilePath, globalConf, resizeSize, goodPath, badPath):
-    # file.writelines(
-    #     getTime + "\t" + "DEEPLEARNING_CAFFE: globalConf:\t" + str(globalConf) + "\tresizeSize:\t" + str(
-    #         resizeSize) + "\t")
-    global badResult, goodResult
-    inputFile = cv2.imread(inputFilePath)
-    (h, w) = inputFile.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(inputFile, (resizeSize, resizeSize)), 1.0,
-                                 (300, 300), (104.0, 177.0, 123.0))
-    # inputFile = imutils.resize(inputFile, resizeSize)
-    blob = cv2.dnn.blobFromImage(inputFile)
-    net.setInput(blob)
-    detections = net.forward()
-    counter = 0
-    for i in range(0, detections.shape[2]):
+# def caffeDeepLearningDetector(inputFilePath, globalConf, resizeSize, goodPath, badPath):
+#     # file.writelines(
+#     #     getTime + "\t" + "DEEPLEARNING_CAFFE: globalConf:\t" + str(globalConf) + "\tresizeSize:\t" + str(
+#     #         resizeSize) + "\t")
+#     global badResult, goodResult
+#     inputFile = cv2.imread(inputFilePath)
+#     (h, w) = inputFile.shape[:2]
+#     blob = cv2.dnn.blobFromImage(cv2.resize(inputFile, (resizeSize, resizeSize)), 1.0,
+#                                  (300, 300), (104.0, 177.0, 123.0))
+#     # inputFile = imutils.resize(inputFile, resizeSize)
+#     blob = cv2.dnn.blobFromImage(inputFile)
+#     net.setInput(blob)
+#     detections = net.forward()
+#     counter = 0
+#     for i in range(0, detections.shape[2]):
+#
+#         confidence = detections[0, 0, i, 2]
+#         if confidence > globalConf:
+#             counter += 1
+#             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+#             (startX, startY, endX, endY) = box.astype("int")
+#
+#             text = "{:.2f}%".format(confidence * 100)
+#             y = startY - 10 if startY - 10 > 10 else startY + 10
+#             cv2.rectangle(inputFile, (startX, startY), (endX, endY),
+#                           (0, 0, 255), 2)
+#             cv2.putText(inputFile, text, (startX, y),
+#                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+#             # cv2.imshow("Output", inputFile)
+#             # cv2.waitKey(0)
+#     if counter != 1:
+#         cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+#         print(counter)
+#         badResult += 1
+#     else:
+#         cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+#         print(counter)
+#         goodResult += 1
 
-        confidence = detections[0, 0, i, 2]
-        if confidence > globalConf:
-            counter += 1
-            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-            (startX, startY, endX, endY) = box.astype("int")
-
-            text = "{:.2f}%".format(confidence * 100)
-            y = startY - 10 if startY - 10 > 10 else startY + 10
-            cv2.rectangle(inputFile, (startX, startY), (endX, endY),
-                          (0, 0, 255), 2)
-            cv2.putText(inputFile, text, (startX, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
-            # cv2.imshow("Output", inputFile)
-            # cv2.waitKey(0)
-    if counter != 1:
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
-        print(counter)
-        badResult += 1
-    else:
-        cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
-        print(counter)
-        goodResult += 1
 
 def dlibDeepLearningDetector(inputFilePath, resizeSize, upsample, goodPath, badPath):
     # dlib.cuda.buffer
@@ -621,7 +634,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
             os.mkdir(pathGoodBad)
             os.mkdir(pathBadBad)
 
-            for i in range(1, 2, 1):
+            for i in range(1, 11, 1):
                 # pathCore = personDefPath + str(i) + "\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
                 #     values[1]) + "\\"
 
@@ -887,7 +900,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    caffeDeepLearningDetector(image, values[0], values[1], pathGood, pathGoodBad)
+                    # caffeDeepLearningDetector(image, values[0], values[1], pathGood, pathGoodBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
@@ -924,7 +937,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    caffeDeepLearningDetector(image, values[0], values[1], pathBadBad, pathBad)
+                    # caffeDeepLearningDetector(image, values[0], values[1], pathBadBad, pathBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
@@ -1174,7 +1187,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 truePositive + trueNegative + falsePositive + falseNegative) +
             f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
 
-    if (alghoritmName == "MTCNN"):
+    elif (alghoritmName == "MTCNN"):
         if (mode == "SICK"):
             file.writelines("Positive\t")
             print("MTCNN: Sick People")
@@ -1193,7 +1206,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print(image)
                 print("Iteracja: " + str(counter))
                 counter += 1
-                haarCascadeFaceDetector(image, values[0], values[1], pathGood, pathBad)
+                getFace(image, values[0], values[1], pathGood, pathBad)
                 if printDetails:
                     printDetails = False
             printDetails = True
@@ -1205,9 +1218,8 @@ def researchOrderer(alghoritmName, mode, values, clear):
             badResult = 0
         elif (mode == "HEALTHY"):
             print("MTCNN: Healthy People")
-            # if clear == 0 :
-            #     removeAllResults(00)
-            pathCore = personDefPath + getXTime + " MTCNN" + "\\"
+            pathCore = personDefPath + getXTime + " MTCNN: threshold:_" + str(
+                values[0]) + "_factor:_" + str(values[1]) + "\\"
             pathCore = pathCore.replace(":", " ")
             os.mkdir(pathCore)
             pathGood = pathCore + "Dobre\\"
@@ -1220,14 +1232,8 @@ def researchOrderer(alghoritmName, mode, values, clear):
             os.mkdir(pathGoodBad)
             os.mkdir(pathBadBad)
 
-            for i in range(1, 2, 1):
-                # pathCore = personDefPath + str(i) + "\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
-                #     values[1]) + "\\"
-
-                # os.mkdir(pathCore)
-
+            for i in range(1, 11, 1):
                 lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
-                # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
                 lister_bad = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Zle/*")
 
                 # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
@@ -1236,60 +1242,36 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    mtcnnDetector(image, pathGood, pathGoodBad)
+                    getFace(image, values[0], values[1], pathGood, pathGoodBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
 
                 truePositive += goodResult
                 falseNegative += badResult
-                # file.writelines("Results:\t")
-                # file.writelines("Good:\t" + str(goodResult) + '\t')
-                # file.writelines("Good_failed:\t" + str(badResult) + '\t')
-                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+
                 goodResult = 0
                 badResult = 0
 
-                # file.writelines("Osoba " + str(i) + " " + "Srednie" + ":\t")
-                # counter = 0
-                # for image in lister_moderate:
-                #     print(image)
-                #     print("Iteracja: " + str(counter))
-                #     counter += 1
-                #     haarCascadeFaceDetector(image, values[0], values[1], pathGood, pathBad)
-                #     if printDetails:
-                #         printDetails = False
-                # printDetails = True
-                # file.writelines("Results:\t")
-                # file.writelines("Good:\t" + str(goodResult) + '\t')
-                # file.writelines("Bad:\t" + str(badResult) + '\t')
-                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-                # goodResult = 0
-                # badResult = 0
-
-                # file.writelines("Osoba " + str(i) + " " + "Zle" + ":\t")
                 counter = 0
                 for image in lister_bad:
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    mtcnnDetector(image, pathGood, pathGoodBad)
+                    getFace(image, values[0], values[1], pathBadBad, pathBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
 
                 falsePositive += badResult
                 trueNegative += goodResult
-                # file.writelines("Results:\t")
-                # file.writelines("Bad:\t" + str(goodResult) + '\t')
-                # file.writelines("Bad_failed:\t" + str(badResult) + '\t')
-                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
                 goodResult = 0
                 badResult = 0
 
         file.writelines(
-            getTime + "\tHaar Cascade: scaleFactor:_" + str(values[0]) + "_neighbours:_" + str(
-                values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
+            getTime + "\tMTCNN: threshold:_" + str(values[0]) + "_factor:_" + str(
+                values[1]) + "\ttruePositive:\t" + str(
+                truePositive) + "\tfalseNegative:\t" +
             str(falseNegative) + "\tfalsePositive:\t" + str(
                 falsePositive) + "\ttrueNegative:\t" + str(
                 trueNegative) + "\tTotal:\t" + str(
@@ -1352,7 +1334,6 @@ def researchOrderer(alghoritmName, mode, values, clear):
 # researchOrderer("DLCAFFE", "HEALTHY", [0.5, 200], 0)
 
 
-
 # researchOrderer("DLCAFFE", "SICK", [0.5, 300], 0)
 #
 # # researchModeExecutor(2, 2, 0, positiveLister, dlibGoodPath, dlibBadPath)
@@ -1399,9 +1380,9 @@ def researchOrderer(alghoritmName, mode, values, clear):
 
 
 # DODATKOWE BY WYRÓWNAC
-researchOrderer("CNNDLIB", "HEALTHY", [250, 3], 0)
-researchOrderer("CNNDLIB", "HEALTHY", [250, 3], 0)
-researchOrderer("CNNDLIB", "HEALTHY", [350, 2], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [250, 3], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [250, 3], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [350, 2], 0)
 
 # researchOrderer("LBP", "HEALTHY", [4, 3], 0)
 # researchOrderer("LBP", "HEALTHY", [3, 3], 0)
@@ -1414,4 +1395,16 @@ researchOrderer("CNNDLIB", "HEALTHY", [350, 2], 0)
 # researchOrderer("HAAR", "HEALTHY", [5, 4], 0)
 # researchOrderer("HAAR", "HEALTHY", [5, 3], 0)
 # researchOrderer("HAAR", "HEALTHY", [6, 3], 0)
+
+
+researchOrderer("HAAR", "HEALTHY", [5, 8], 0)
+
+researchOrderer("LBP", "HEALTHY", [5, 8], 0)
+
+researchOrderer("CNNDLIB", "HEALTHY", [350, 2], 0)
+
+researchOrderer("HOG", "HEALTHY", 0, 0)
+
+researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809], 0)
+
 file.close()
