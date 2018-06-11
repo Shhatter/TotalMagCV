@@ -561,6 +561,7 @@ def dlibDeepLearningDetector(inputFilePath, resizeSize, upsample, goodPath, badP
 
 def f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, beta):
     print("working hard")
+
     accuracy = (truePositive + trueNegative) / (truePositive + trueNegative + falsePositive + falseNegative)
     precision = truePositive / (truePositive + falsePositive)
     recall = truePositive / (truePositive + falseNegative)
@@ -588,39 +589,104 @@ def researchOrderer(alghoritmName, mode, values, clear):
     getXTime = str(getTimeFolderPersons.strftime("%Y-%m-%d - %H-%M-%S"))
 
     if (alghoritmName == "HAAR"):
-        if (mode == "SICK"):
-            file.writelines("Positive\t")
-            print("HAAR: Sick People")
 
-            pathCore = researchDefPath + "Haar Cascade\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
+        if (mode == "SICK"):
+            print("HAAR: Healthy People")
+            # if clear == 0 :
+            #     removeAllResults(00)
+            pathCore = personDefPath + getXTime + "SICK Haar SF " + str(values[0]) + " NB " + str(
                 values[1]) + "\\"
             pathCore = pathCore.replace(":", " ")
-
             os.mkdir(pathCore)
             pathGood = pathCore + "Dobre\\"
             pathBad = pathCore + "Zle\\"
+            pathGoodBad = pathCore + "Dobre_Nietrafione\\"
+            pathBadBad = pathCore + "Zle_Nietrafione\\"
+
             os.mkdir(pathGood)
             os.mkdir(pathBad)
-            counter = 0
-            for image in positiveLister:
-                print(image)
-                print("Iteracja: " + str(counter))
-                counter += 1
-                haarCascadeFaceDetector(image, values[0], values[1], pathGood, pathBad)
-                if printDetails:
-                    printDetails = False
-            printDetails = True
-            file.writelines("Results:\t")
-            file.writelines("Good:\t" + str(goodResult) + '\t')
-            file.writelines("Bad:\t" + str(badResult) + '\t')
-            file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-            goodResult = 0
-            badResult = 0
+            os.mkdir(pathGoodBad)
+            os.mkdir(pathBadBad)
+
+            for i in range(11, 12, 1):
+                # pathCore = personDefPath + str(i) + "\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
+                #     values[1]) + "\\"
+
+                # os.mkdir(pathCore)
+
+                lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
+                # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
+                lister_bad = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Zle/*")
+
+                # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
+                counter = 0
+                for image in lister_good:
+                    print(image)
+                    print("Iteracja: " + str(counter))
+                    counter += 1
+                    haarCascadeFaceDetector(image, values[0], values[1], pathGood, pathGoodBad)
+                    if printDetails:
+                        printDetails = False
+                printDetails = True
+
+                truePositive += goodResult
+                falseNegative += badResult
+                # file.writelines("Results:\t")
+                # file.writelines("Good:\t" + str(goodResult) + '\t')
+                # file.writelines("Good_failed:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                goodResult = 0
+                badResult = 0
+
+                # file.writelines("Osoba " + str(i) + " " + "Srednie" + ":\t")
+                # counter = 0
+                # for image in lister_moderate:
+                #     print(image)
+                #     print("Iteracja: " + str(counter))
+                #     counter += 1
+                #     haarCascadeFaceDetector(image, values[0], values[1], pathGood, pathBad)
+                #     if printDetails:
+                #         printDetails = False
+                # printDetails = True
+                # file.writelines("Results:\t")
+                # file.writelines("Good:\t" + str(goodResult) + '\t')
+                # file.writelines("Bad:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                # goodResult = 0
+                # badResult = 0
+
+                # file.writelines("Osoba " + str(i) + " " + "Zle" + ":\t")
+                counter = 0
+                for image in lister_bad:
+                    print(image)
+                    print("Iteracja: " + str(counter))
+                    counter += 1
+                    haarCascadeFaceDetector(image, values[0], values[1], pathBadBad, pathBad)
+                    if printDetails:
+                        printDetails = False
+                printDetails = True
+
+                falsePositive += badResult
+                trueNegative += goodResult
+                # file.writelines("Results:\t")
+                # file.writelines("Bad:\t" + str(goodResult) + '\t')
+                # file.writelines("Bad_failed:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                goodResult = 0
+                badResult = 0
+            file.writelines(
+                getTime + "\tSICK\tHaar Cascade: scaleFactor:_" + str(values[0]) + "_neighbours:_" + str(
+                    values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
+                str(falseNegative) + "\tfalsePositive:\t" + str(
+                    falsePositive) + "\ttrueNegative:\t" + str(
+                    trueNegative) + "\tTotal:\t" + str(
+                    truePositive + trueNegative + falsePositive + falseNegative) +
+                f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
         elif (mode == "HEALTHY"):
             print("HAAR: Healthy People")
             # if clear == 0 :
             #     removeAllResults(00)
-            pathCore = personDefPath + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
+            pathCore = personDefPath + getXTime + "HEALTHY Haar SF " + str(values[0]) + " NB " + str(
                 values[1]) + "\\"
             pathCore = pathCore.replace(":", " ")
             os.mkdir(pathCore)
@@ -701,49 +767,21 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 goodResult = 0
                 badResult = 0
 
-        file.writelines(
-            getTime + "\tHaar Cascade: scaleFactor:_" + str(values[0]) + "_neighbours:_" + str(
-                values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
-            str(falseNegative) + "\tfalsePositive:\t" + str(
-                falsePositive) + "\ttrueNegative:\t" + str(
-                trueNegative) + "\tTotal:\t" + str(
-                truePositive + trueNegative + falsePositive + falseNegative) +
-            f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
+            file.writelines(
+                getTime + "\tHEALTHY\tHaar Cascade: scaleFactor:_" + str(values[0]) + "_neighbours:_" + str(
+                    values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
+                str(falseNegative) + "\tfalsePositive:\t" + str(
+                    falsePositive) + "\ttrueNegative:\t" + str(
+                    trueNegative) + "\tTotal:\t" + str(
+                    truePositive + trueNegative + falsePositive + falseNegative) +
+                f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
 
     elif (alghoritmName == "LBP"):
         if (mode == "SICK"):
-            file.writelines("Positive\t")
-            print("LBP: Sick People")
-
-            pathCore = researchDefPath + "LBP\\" + getXTime + " LBP SF " + str(values[0]) + " NB " + str(
-                values[1]) + "\\"
-            pathCore = pathCore.replace(":", " ")
-
-            os.mkdir(pathCore)
-            pathGood = pathCore + "Dobre\\"
-            pathBad = pathCore + "Zle\\"
-            os.mkdir(pathGood)
-            os.mkdir(pathBad)
-            counter = 0
-            for image in positiveLister:
-                print(image)
-                print("Iteracja: " + str(counter))
-                counter += 1
-                lbpCascadeDetector(image, values[0], values[1], pathGood, pathBad)
-                if printDetails:
-                    printDetails = False
-            printDetails = True
-            file.writelines("Results:\t")
-            file.writelines("Good:\t" + str(goodResult) + '\t')
-            file.writelines("Bad:\t" + str(badResult) + '\t')
-            file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-            goodResult = 0
-            badResult = 0
-        elif (mode == "HEALTHY"):
-            print("LBP: Healthy People")
+            print("LBP: SICK People")
             # if clear == 0 :
             #     removeAllResults(00)
-            pathCore = personDefPath + getXTime + " LBP SF " + str(values[0]) + " NB " + str(
+            pathCore = personDefPath + getXTime + "SICK LBP SF " + str(values[0]) + " NB " + str(
                 values[1]) + "\\"
             pathCore = pathCore.replace(":", " ")
             os.mkdir(pathCore)
@@ -757,7 +795,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
             os.mkdir(pathGoodBad)
             os.mkdir(pathBadBad)
 
-            for i in range(1, 2, 1):
+            for i in range(11, 12, 1):
                 # pathCore = personDefPath + str(i) + "\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
                 #     values[1]) + "\\"
 
@@ -825,52 +863,18 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 badResult = 0
 
             file.writelines(
-                getTime + "\tLBP :CNNscaleFactor:" + str(values[0]) + "_neighbours:_" + str(
+                getTime + "\tSICK\tLBP :CNNscaleFactor:" + str(values[0]) + "_neighbours:_" + str(
                     values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
                 str(falseNegative) + "\tfalsePositive:\t" + str(
                     falsePositive) + "\ttrueNegative:\t" + str(
                     trueNegative) + "\tTotal:\t" + str(
                     truePositive + trueNegative + falsePositive + falseNegative) +
                 f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
-    #  globalConf, resizeSize,
-
-    # pathCore = personDefPath + str(i) + "\\" + getXTime + " DLCAFFE GLCONF" + str(
-    #     values[0]) + " RSSIZE " + str(
-    elif (alghoritmName == "DLCAFFE"):
-        if (mode == "SICK"):
-            file.writelines("Positive\t")
-            print("DLCAFFE: Sick People")
-
-            pathCore = researchDefPath + "DLCAFFE\\" + getXTime + " DLCAFFE GLCONF " + str(
-                values[0]) + " RSSIZE " + str(
-                values[1]) + "\\"
-            pathCore = pathCore.replace(":", " ")
-
-            os.mkdir(pathCore)
-            pathGood = pathCore + "Dobre\\"
-            pathBad = pathCore + "Zle\\"
-            os.mkdir(pathGood)
-            os.mkdir(pathBad)
-            counter = 0
-            for image in positiveLister:
-                print(image)
-                print("Iteracja: " + str(counter))
-                counter += 1
-                lbpCascadeDetector(image, values[0], values[1], pathGood, pathBad)
-                if printDetails:
-                    printDetails = False
-            printDetails = True
-            file.writelines("Results:\t")
-            file.writelines("Good:\t" + str(goodResult) + '\t')
-            file.writelines("Bad:\t" + str(badResult) + '\t')
-            file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-            goodResult = 0
-            badResult = 0
         elif (mode == "HEALTHY"):
             print("LBP: Healthy People")
             # if clear == 0 :
             #     removeAllResults(00)
-            pathCore = personDefPath + getXTime + "DLCAFFE GLCONF " + str(values[0]) + " RSSIZE " + str(
+            pathCore = personDefPath + getXTime + "HEALTHY LBP SF " + str(values[0]) + " NB " + str(
                 values[1]) + "\\"
             pathCore = pathCore.replace(":", " ")
             os.mkdir(pathCore)
@@ -884,7 +888,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
             os.mkdir(pathGoodBad)
             os.mkdir(pathBadBad)
 
-            for i in range(1, 2, 1):
+            for i in range(1, 11, 1):
                 # pathCore = personDefPath + str(i) + "\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
                 #     values[1]) + "\\"
 
@@ -900,7 +904,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    # caffeDeepLearningDetector(image, values[0], values[1], pathGood, pathGoodBad)
+                    lbpCascadeDetector(image, values[0], values[1], pathGood, pathGoodBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
@@ -937,7 +941,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    # caffeDeepLearningDetector(image, values[0], values[1], pathBadBad, pathBad)
+                    lbpCascadeDetector(image, values[0], values[1], pathBadBad, pathBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
@@ -950,9 +954,223 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
                 goodResult = 0
                 badResult = 0
-            # "DLCAFFE GLCONF " + str(values[0]) + " RSSIZE "
+
             file.writelines(
-                getTime + "\tLBP :DLCAFFE:_GLCONF" + str(values[0]) + "_RSSIZE:_" + str(
+                getTime + "\tHEALTHY\tLBP :CNNscaleFactor:" + str(values[0]) + "_neighbours:_" + str(
+                    values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
+                str(falseNegative) + "\tfalsePositive:\t" + str(
+                    falsePositive) + "\ttrueNegative:\t" + str(
+                    trueNegative) + "\tTotal:\t" + str(
+                    truePositive + trueNegative + falsePositive + falseNegative) +
+                f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
+    #  globalConf, resizeSize,
+
+    # pathCore = personDefPath + str(i) + "\\" + getXTime + " DLCAFFE GLCONF" + str(
+    #     values[0]) + " RSSIZE " + str(
+    # elif (alghoritmName == "DLCAFFE"):
+    #     if (mode == "SICK"):
+    #         file.writelines("Positive\t")
+    #         print("DLCAFFE: Sick People")
+    #
+    #         pathCore = researchDefPath + "DLCAFFE\\" + getXTime + " DLCAFFE GLCONF " + str(
+    #             values[0]) + " RSSIZE " + str(
+    #             values[1]) + "\\"
+    #         pathCore = pathCore.replace(":", " ")
+    #
+    #         os.mkdir(pathCore)
+    #         pathGood = pathCore + "Dobre\\"
+    #         pathBad = pathCore + "Zle\\"
+    #         os.mkdir(pathGood)
+    #         os.mkdir(pathBad)
+    #         counter = 0
+    #         for image in positiveLister:
+    #             print(image)
+    #             print("Iteracja: " + str(counter))
+    #             counter += 1
+    #             lbpCascadeDetector(image, values[0], values[1], pathGood, pathBad)
+    #             if printDetails:
+    #                 printDetails = False
+    #         printDetails = True
+    #         file.writelines("Results:\t")
+    #         file.writelines("Good:\t" + str(goodResult) + '\t')
+    #         file.writelines("Bad:\t" + str(badResult) + '\t')
+    #         file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+    #         goodResult = 0
+    #         badResult = 0
+    #     elif (mode == "HEALTHY"):
+    #         print("LBP: Healthy People")
+    #         # if clear == 0 :
+    #         #     removeAllResults(00)
+    #         pathCore = personDefPath + getXTime + "DLCAFFE GLCONF " + str(values[0]) + " RSSIZE " + str(
+    #             values[1]) + "\\"
+    #         pathCore = pathCore.replace(":", " ")
+    #         os.mkdir(pathCore)
+    #         pathGood = pathCore + "Dobre\\"
+    #         pathBad = pathCore + "Zle\\"
+    #         pathGoodBad = pathCore + "Dobre_Nietrafione\\"
+    #         pathBadBad = pathCore + "Zle_Nietrafione\\"
+    #
+    #         os.mkdir(pathGood)
+    #         os.mkdir(pathBad)
+    #         os.mkdir(pathGoodBad)
+    #         os.mkdir(pathBadBad)
+    #
+    #         for i in range(1, 2, 1):
+    #             # pathCore = personDefPath + str(i) + "\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
+    #             #     values[1]) + "\\"
+    #
+    #             # os.mkdir(pathCore)
+    #
+    #             lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
+    #             # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
+    #             lister_bad = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Zle/*")
+    #
+    #             # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
+    #             counter = 0
+    #             for image in lister_good:
+    #                 print(image)
+    #                 print("Iteracja: " + str(counter))
+    #                 counter += 1
+    #                 # caffeDeepLearningDetector(image, values[0], values[1], pathGood, pathGoodBad)
+    #                 if printDetails:
+    #                     printDetails = False
+    #             printDetails = True
+    #
+    #             truePositive += goodResult
+    #             falseNegative += badResult
+    #             # file.writelines("Results:\t")
+    #             # file.writelines("Good:\t" + str(goodResult) + '\t')
+    #             # file.writelines("Good_failed:\t" + str(badResult) + '\t')
+    #             # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+    #             goodResult = 0
+    #             badResult = 0
+    #
+    #             # file.writelines("Osoba " + str(i) + " " + "Srednie" + ":\t")
+    #             # counter = 0
+    #             # for image in lister_moderate:
+    #             #     print(image)
+    #             #     print("Iteracja: " + str(counter))
+    #             #     counter += 1
+    #             #     haarCascadeFaceDetector(image, values[0], values[1], pathGood, pathBad)
+    #             #     if printDetails:
+    #             #         printDetails = False
+    #             # printDetails = True
+    #             # file.writelines("Results:\t")
+    #             # file.writelines("Good:\t" + str(goodResult) + '\t')
+    #             # file.writelines("Bad:\t" + str(badResult) + '\t')
+    #             # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+    #             # goodResult = 0
+    #             # badResult = 0
+    #
+    #             # file.writelines("Osoba " + str(i) + " " + "Zle" + ":\t")
+    #             counter = 0
+    #             for image in lister_bad:
+    #                 print(image)
+    #                 print("Iteracja: " + str(counter))
+    #                 counter += 1
+    #                 # caffeDeepLearningDetector(image, values[0], values[1], pathBadBad, pathBad)
+    #                 if printDetails:
+    #                     printDetails = False
+    #             printDetails = True
+    #
+    #             falsePositive += badResult
+    #             trueNegative += goodResult
+    #             # file.writelines("Results:\t")
+    #             # file.writelines("Bad:\t" + str(goodResult) + '\t')
+    #             # file.writelines("Bad_failed:\t" + str(badResult) + '\t')
+    #             # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+    #             goodResult = 0
+    #             badResult = 0
+    #         # "DLCAFFE GLCONF " + str(values[0]) + " RSSIZE "
+    #         file.writelines(
+    #             getTime + "\tLBP :DLCAFFE:_GLCONF" + str(values[0]) + "_RSSIZE:_" + str(
+    #                 values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
+    #             str(falseNegative) + "\tfalsePositive:\t" + str(
+    #                 falsePositive) + "\ttrueNegative:\t" + str(
+    #                 trueNegative) + "\tTotal:\t" + str(
+    #                 truePositive + trueNegative + falsePositive + falseNegative) +
+    #             f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
+
+    elif (alghoritmName == "CNNDLIB"):
+        if (mode == "SICK"):
+            print("CNNDLIB: Sick People")
+            # if clear == 0 :
+            #     removeAllResults(00)
+            pathCore = personDefPath + getXTime + "SICK CNNDLIB RESIZE" + str(
+                values[0]) + " UPSAMPLE " + str(
+                values[1]) + "\\"
+            pathCore = pathCore.replace(":", " ")
+            os.mkdir(pathCore)
+            pathGood = pathCore + "Dobre\\"
+            pathBad = pathCore + "Zle\\"
+            pathGoodBad = pathCore + "Dobre_Nietrafione\\"
+            pathBadBad = pathCore + "Zle_Nietrafione\\"
+            os.mkdir(pathGood)
+            os.mkdir(pathBad)
+            os.mkdir(pathGoodBad)
+            os.mkdir(pathBadBad)
+            for i in range(11, 12, 1):
+
+                lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
+                # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
+                lister_bad = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Zle/*")
+
+                # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
+                counter = 0
+                for image in lister_good:
+                    print(image)
+                    print("Iteracja: " + str(counter))
+                    counter += 1
+                    dlibDeepLearningDetector(image, values[0], values[1], pathGood, pathGoodBad)
+                    if printDetails:
+                        printDetails = False
+                printDetails = True
+                # file.writelines("Results:\t")
+                # file.writelines("Good:\t" + str(goodResult) + '\t')
+                # file.writelines("Bad:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                truePositive += goodResult
+                falseNegative += badResult
+                goodResult = 0
+                badResult = 0
+
+                # file.writelines("Osoba " + str(i) + " " + "Srednie" + ":\t")
+                # counter = 0
+                # for image in lister_moderate:
+                #     print(image)
+                #     print("Iteracja: " + str(counter))
+                #     counter += 1
+                #     dlibDeepLearningDetector(image, values[0], values[1], pathGood, pathBad)
+                #     if printDetails:
+                #         printDetails = False
+                # printDetails = True
+                # file.writelines("Results:\t")
+                # file.writelines("Good:\t" + str(goodResult) + '\t')
+                # file.writelines("Bad:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                # goodResult = 0
+                # badResult = 0
+
+                # file.writelines("Osoba " + str(i) + " " + "Zle" + ":\t")
+                counter = 0
+                for image in lister_bad:
+                    print(image)
+                    print("Iteracja: " + str(counter))
+                    counter += 1
+                    dlibDeepLearningDetector(image, values[0], values[1], pathBadBad, pathBad)
+                    if printDetails:
+                        printDetails = False
+                printDetails = True
+                # file.writelines("Results:\t")
+                # file.writelines("Good:\t" + str(goodResult) + '\t')
+                # file.writelines("Bad:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                falsePositive += badResult
+                trueNegative += goodResult
+                goodResult = 0
+                badResult = 0
+            file.writelines(
+                getTime + "\tSICK\tDEEPLEARNING_CNN :resizeSize:" + str(values[0]) + "_upsample:_" + str(
                     values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
                 str(falseNegative) + "\tfalsePositive:\t" + str(
                     falsePositive) + "\ttrueNegative:\t" + str(
@@ -960,41 +1178,11 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     truePositive + trueNegative + falsePositive + falseNegative) +
                 f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
 
-    elif (alghoritmName == "CNNDLIB"):
-        if (mode == "SICK"):
-            file.writelines("Positive\t")
-            print("CNNDLIB: Sick People")
-
-            pathCore = researchDefPath + "CNNDLIB\\" + getXTime + " CNNDLIB RESIZE " + str(
-                values[0]) + " UPSAMPLE " + str(
-                values[1]) + "\\"
-            pathCore = pathCore.replace(":", " ")
-
-            os.mkdir(pathCore)
-            pathGood = pathCore + "Dobre\\"
-            pathBad = pathCore + "Zle\\"
-            os.mkdir(pathGood)
-            os.mkdir(pathBad)
-            counter = 0
-            for image in positiveLister:
-                print(image)
-                print("Iteracja: " + str(counter))
-                counter += 1
-                dlibDeepLearningDetector(image, values[0], values[1], pathGood, pathBad)
-                if printDetails:
-                    printDetails = False
-            printDetails = True
-            file.writelines("Results:\t")
-            file.writelines("Good:\t" + str(goodResult) + '\t')
-            file.writelines("Bad:\t" + str(badResult) + '\t')
-            file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-            goodResult = 0
-            badResult = 0
         elif (mode == "HEALTHY"):
             print("CNNDLIB: Healthy People")
             # if clear == 0 :
             #     removeAllResults(00)
-            pathCore = personDefPath + getXTime + " CNNDLIB RESIZE" + str(
+            pathCore = personDefPath + getXTime + "HEALTHY CNNDLIB RESIZE" + str(
                 values[0]) + " UPSAMPLE " + str(
                 values[1]) + "\\"
             pathCore = pathCore.replace(":", " ")
@@ -1068,7 +1256,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 goodResult = 0
                 badResult = 0
             file.writelines(
-                getTime + "\tDEEPLEARNING_CNN :resizeSize:" + str(values[0]) + "_upsample:_" + str(
+                getTime + "\tHEALTHY\tDEEPLEARNING_CNN :resizeSize:" + str(values[0]) + "_upsample:_" + str(
                     values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
                 str(falseNegative) + "\tfalsePositive:\t" + str(
                     falsePositive) + "\ttrueNegative:\t" + str(
@@ -1077,38 +1265,12 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
 
     elif (alghoritmName == "HOG"):
+
         if (mode == "SICK"):
-            file.writelines("Positive\t")
-            print("HOG: Sick People")
-
-            pathCore = researchDefPath + "HOG\\" + getXTime + " HOG " + "\\"
-            pathCore = pathCore.replace(":", " ")
-
-            os.mkdir(pathCore)
-            pathGood = pathCore + "Dobre\\"
-            pathBad = pathCore + "Zle\\"
-            os.mkdir(pathGood)
-            os.mkdir(pathBad)
-            counter = 0
-            for image in positiveLister:
-                print(image)
-                print("Iteracja: " + str(counter))
-                counter += 1
-                dlibFaceDetector(image, pathGood, pathBad)
-                if printDetails:
-                    printDetails = False
-            printDetails = True
-            file.writelines("Results:\t")
-            file.writelines("Good:\t" + str(goodResult) + '\t')
-            file.writelines("Bad:\t" + str(badResult) + '\t')
-            file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-            goodResult = 0
-            badResult = 0
-        elif (mode == "HEALTHY"):
             print("HOG: Healthy People")
             # if clear == 0 :
             #     removeAllResults(00)
-            pathCore = personDefPath + getXTime + " HOG " + "\\"
+            pathCore = personDefPath + getXTime + "SICK HOG " + "\\"
             pathCore = pathCore.replace(":", " ")
             os.mkdir(pathCore)
             pathGood = pathCore + "Dobre\\"
@@ -1119,7 +1281,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
             os.mkdir(pathBad)
             os.mkdir(pathGoodBad)
             os.mkdir(pathBadBad)
-            for i in range(1, 2, 1):
+            for i in range(11, 12, 1):
 
                 lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
                 # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
@@ -1179,43 +1341,158 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 trueNegative += goodResult
                 goodResult = 0
                 badResult = 0
-        file.writelines(
-            getTime + "\tHOG: " + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
-            str(falseNegative) + "\tfalsePositive:\t" + str(
-                falsePositive) + "\ttrueNegative:\t" + str(
-                trueNegative) + "\tTotal:\t" + str(
-                truePositive + trueNegative + falsePositive + falseNegative) +
-            f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
-
-    elif (alghoritmName == "MTCNN"):
-        if (mode == "SICK"):
-            file.writelines("Positive\t")
-            print("MTCNN: Sick People")
-
-            pathCore = researchDefPath + "MTCNN\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
-                values[1]) + "\\"
+            file.writelines(
+                getTime + "\tSICK \tHOG: " + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
+                str(falseNegative) + "\tfalsePositive:\t" + str(
+                    falsePositive) + "\ttrueNegative:\t" + str(
+                    trueNegative) + "\tTotal:\t" + str(
+                    truePositive + trueNegative + falsePositive + falseNegative) +
+                f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
+        elif (mode == "HEALTHY"):
+            print("HOG: Healthy People")
+            # if clear == 0 :
+            #     removeAllResults(00)
+            pathCore = personDefPath + getXTime + "HEALTHY HOG " + "\\"
             pathCore = pathCore.replace(":", " ")
-
             os.mkdir(pathCore)
             pathGood = pathCore + "Dobre\\"
             pathBad = pathCore + "Zle\\"
+            pathGoodBad = pathCore + "Dobre_Nietrafione\\"
+            pathBadBad = pathCore + "Zle_Nietrafione\\"
             os.mkdir(pathGood)
             os.mkdir(pathBad)
-            counter = 0
-            for image in positiveLister:
-                print(image)
-                print("Iteracja: " + str(counter))
-                counter += 1
-                getFace(image, values[0], values[1], pathGood, pathBad)
-                if printDetails:
-                    printDetails = False
-            printDetails = True
-            file.writelines("Results:\t")
-            file.writelines("Good:\t" + str(goodResult) + '\t')
-            file.writelines("Bad:\t" + str(badResult) + '\t')
-            file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-            goodResult = 0
-            badResult = 0
+            os.mkdir(pathGoodBad)
+            os.mkdir(pathBadBad)
+            for i in range(1, 11, 1):
+
+                lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
+                # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
+                lister_bad = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Zle/*")
+
+                # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
+                counter = 0
+                for image in lister_good:
+                    print(image)
+                    print("Iteracja: " + str(counter))
+                    counter += 1
+                    dlibFaceDetector(image, pathGood, pathGoodBad)
+                    if printDetails:
+                        printDetails = False
+                printDetails = True
+                # file.writelines("Results:\t")
+                # file.writelines("Good:\t" + str(goodResult) + '\t')
+                # file.writelines("Bad:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                truePositive += goodResult
+                falseNegative += badResult
+                goodResult = 0
+                badResult = 0
+
+                # file.writelines("Osoba " + str(i) + " " + "Srednie" + ":\t")
+                counter = 0
+                # for image in lister_moderate:
+                #     print(image)
+                #     print("Iteracja: " + str(counter))
+                #     counter += 1
+                #     dlibFaceDetector(image, pathGood, pathBad)
+                #     if printDetails:
+                #         printDetails = False
+                # printDetails = True
+                # file.writelines("Results:\t")
+                # file.writelines("Good:\t" + str(goodResult) + '\t')
+                # file.writelines("Bad:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                # goodResult = 0
+                # badResult = 0
+                #
+                # file.writelines("Osoba " + str(i) + " " + "Zle" + ":\t")
+                # counter = 0
+                for image in lister_bad:
+                    print(image)
+                    print("Iteracja: " + str(counter))
+                    counter += 1
+                    dlibFaceDetector(image, pathBadBad, pathBad)
+                    if printDetails:
+                        printDetails = False
+                printDetails = True
+                # file.writelines("Results:\t")
+                # file.writelines("Good:\t" + str(goodResult) + '\t')
+                # file.writelines("Bad:\t" + str(badResult) + '\t')
+                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+                falsePositive += badResult
+                trueNegative += goodResult
+                goodResult = 0
+                badResult = 0
+            file.writelines(
+                getTime + "\tHEALTHY\tHOG: " + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
+                str(falseNegative) + "\tfalsePositive:\t" + str(
+                    falsePositive) + "\ttrueNegative:\t" + str(
+                    trueNegative) + "\tTotal:\t" + str(
+                    truePositive + trueNegative + falsePositive + falseNegative) +
+                f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
+
+    elif (alghoritmName == "MTCNN"):
+        if (mode == "SICK"):
+            print("MTCNN: Sick People")
+            pathCore = personDefPath + getXTime + "SICK MTCNN: threshold:_" + str(
+                values[0]) + "_factor:_" + str(values[1]) + "\\"
+            pathCore = pathCore.replace(":", " ")
+            os.mkdir(pathCore)
+            pathGood = pathCore + "Dobre\\"
+            pathBad = pathCore + "Zle\\"
+            pathGoodBad = pathCore + "Dobre_Nietrafione\\"
+            pathBadBad = pathCore + "Zle_Nietrafione\\"
+
+            os.mkdir(pathGood)
+            os.mkdir(pathBad)
+            os.mkdir(pathGoodBad)
+            os.mkdir(pathBadBad)
+
+            for i in range(11, 12, 1):
+                lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
+                lister_bad = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Zle/*")
+
+                # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
+                counter = 0
+                for image in lister_good:
+                    print(image)
+                    print("Iteracja: " + str(counter))
+                    counter += 1
+                    getFace(image, values[0], values[1], pathGood, pathGoodBad)
+                    if printDetails:
+                        printDetails = False
+                printDetails = True
+
+                truePositive += goodResult
+                falseNegative += badResult
+
+                goodResult = 0
+                badResult = 0
+
+                counter = 0
+                for image in lister_bad:
+                    print(image)
+                    print("Iteracja: " + str(counter))
+                    counter += 1
+                    getFace(image, values[0], values[1], pathBadBad, pathBad)
+                    if printDetails:
+                        printDetails = False
+                printDetails = True
+
+                falsePositive += badResult
+                trueNegative += goodResult
+                goodResult = 0
+                badResult = 0
+
+            file.writelines(
+                getTime + "\tSICK\tMTCNN: threshold:_" + str(values[0]) + "_factor:_" + str(
+                    values[1]) + "\ttruePositive:\t" + str(
+                    truePositive) + "\tfalseNegative:\t" +
+                str(falseNegative) + "\tfalsePositive:\t" + str(
+                    falsePositive) + "\ttrueNegative:\t" + str(
+                    trueNegative) + "\tTotal:\t" + str(
+                    truePositive + trueNegative + falsePositive + falseNegative) +
+                f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
         elif (mode == "HEALTHY"):
             print("MTCNN: Healthy People")
             pathCore = personDefPath + getXTime + " MTCNN: threshold:_" + str(
@@ -1268,15 +1545,15 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 goodResult = 0
                 badResult = 0
 
-        file.writelines(
-            getTime + "\tMTCNN: threshold:_" + str(values[0]) + "_factor:_" + str(
-                values[1]) + "\ttruePositive:\t" + str(
-                truePositive) + "\tfalseNegative:\t" +
-            str(falseNegative) + "\tfalsePositive:\t" + str(
-                falsePositive) + "\ttrueNegative:\t" + str(
-                trueNegative) + "\tTotal:\t" + str(
-                truePositive + trueNegative + falsePositive + falseNegative) +
-            f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
+            file.writelines(
+                getTime + "\tHEALTHY\tMTCNN: threshold:_" + str(values[0]) + "_factor:_" + str(
+                    values[1]) + "\ttruePositive:\t" + str(
+                    truePositive) + "\tfalseNegative:\t" +
+                str(falseNegative) + "\tfalsePositive:\t" + str(
+                    falsePositive) + "\ttrueNegative:\t" + str(
+                    trueNegative) + "\tTotal:\t" + str(
+                    truePositive + trueNegative + falsePositive + falseNegative) +
+                f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
 
 
 ######################### B
@@ -1397,14 +1674,18 @@ def researchOrderer(alghoritmName, mode, values, clear):
 # researchOrderer("HAAR", "HEALTHY", [6, 3], 0)
 
 
+researchOrderer("HAAR", "SICK", [5, 8], 0)
+researchOrderer("LBP", "SICK", [5, 8], 0)
+researchOrderer("CNNDLIB", "SICK", [350, 2], 0)
+researchOrderer("HOG", "SICK", 0, 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.809], 0)
+
+
+
 researchOrderer("HAAR", "HEALTHY", [5, 8], 0)
-
 researchOrderer("LBP", "HEALTHY", [5, 8], 0)
-
 researchOrderer("CNNDLIB", "HEALTHY", [350, 2], 0)
-
 researchOrderer("HOG", "HEALTHY", 0, 0)
-
 researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809], 0)
 
 file.close()
