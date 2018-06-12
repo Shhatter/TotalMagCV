@@ -139,11 +139,19 @@ Accuracy: 0.78571427
 # n_nodes_hl2 = 400
 # n_nodes_hl3 = 300
 TEŻ BYŁO SPOKOOO
-'''
-n_nodes_hl1 = 150
-n_nodes_hl2 = 100
+
+
+n_nodes_hl1 = 92
+n_nodes_hl2 = 92
 n_nodes_hl3 = 92
-n_nodes_hl4 = 50
+n_nodes_hl4 = 92
+Optimization Finished!
+Accuracy: 0.81055903
+'''
+n_nodes_hl1 = 92
+n_nodes_hl2 = 92
+n_nodes_hl3 = 92
+n_nodes_hl4 = 92
 # n_classes = 1
 
 batch_size = 92

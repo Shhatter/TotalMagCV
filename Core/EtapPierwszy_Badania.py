@@ -83,15 +83,21 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
     faces = []
     height, width = inputFile.shape[:2]
     bounding_boxes, _ = detect_face.detect_face(inputFile, int(width * 0.2), pnet, rnet, onet, threshold, factor)
-
+    x = None
+    y = None
+    hPoint = None
+    wPoint = None
     if (len(bounding_boxes) == 0):
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         # cv2.imshow("image", inputFile)
         # cv2.waitKey(0)
         badResult += 1
 
     elif (len(bounding_boxes) == 1):
-        if (bounding_boxes[0][4] > 0.7):
+
+        if (bounding_boxes[0][4] > 0.70):
+            print("highest: " + str(bounding_boxes[0][4]))
+
             x, y, wPoint, hPoint = int(bounding_boxes[0][0]), int(bounding_boxes[0][1]), int(bounding_boxes[0][2]), int(
                 bounding_boxes[0][3])
 
@@ -118,44 +124,56 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
             cv2.rectangle(inputFile, (x, y),
                           (wPoint, hPoint), (0, 255, 0), 2)
             goodResult += 1
-
-            cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+            # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+        else:
+            # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+            badResult += 1
 
     elif (len(bounding_boxes) != 1):
 
         highest = bounding_boxes[0]
         for i in range(1, len(bounding_boxes), 1):
+            print("highest: " + str(highest[0]))
+
             if (bounding_boxes[i][4] > highest[4]):
                 highest = bounding_boxes[i]
 
-        for a in range(0, 4, 1):
-            highest[a] = int(highest[a])
+        print("highest: " + str(highest[0]))
 
-        if highest[0] < 0:
-            highest[0] = 0
-        elif highest[0] > width:
-            highest[0] = width - 1
+        if (highest[4] > 0.70):
+            for a in range(0, 4, 1):
+                highest[a] = int(highest[a])
 
-        if (highest[1] < 0):
-            highest[1] = 0
-        elif highest[1] > height:
-            highest[1] = height - 1
+            x, y, wPoint, hPoint = int(highest[0]), int(highest[1]), int(highest[2]), int(highest[3])
 
-        if highest[2] < 0:
-            highest[2] = 0
-        elif highest[2] > width:
-            highest[2] = width - 1
+            if x < 0:
+                x = 0
+            elif x > width:
+                x = width - 1
 
-        if (highest[3] < 0):
-            highest[3] = 0
-        elif highest[3] > height:
-            highest[3] = height - 1
+            if (y < 0):
+                y = 0
+            elif y > height:
+                y = height - 1
 
-        cv2.rectangle(inputFile, (int(highest[0]), int(highest[1])),
-                      (int(highest[2]), int(highest[3])), (0, 255, 0), 2)
-        goodResult += 1
+            if wPoint < 0:
+                wPoint = 0
+            elif wPoint > width:
+                wPoint = width - 1
 
-        cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+            if (hPoint < 0):
+                hPoint = 0
+            elif hPoint > height:
+                hPoint = height - 1
+
+            cv2.rectangle(inputFile, (x, y),
+                          (wPoint, hPoint), (0, 255, 0), 2)
+            goodResult += 1
+
+            # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+        else:
+            # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+            badResult += 1
 
 
 def haarCascadeFaceDetector(inputFilePath, scaleFactor, neighbours, goodPath, badPath):
@@ -175,7 +193,7 @@ def haarCascadeFaceDetector(inputFilePath, scaleFactor, neighbours, goodPath, ba
     global goodResult, badResult
 
     if len(detectedFace) != 1:
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         print(len(detectedFace))
         badResult += 1
     else:
@@ -192,7 +210,7 @@ def haarCascadeFaceDetector(inputFilePath, scaleFactor, neighbours, goodPath, ba
             roi_gray = grayImage[y:y + h, x:x + w]
             # croppedImage = cv2.clone
             # cv2.imwrite('WynikiAnalizy\\Haar Cascade\\Dobre\\' + pathlib.Path(inputFilePath).name, roi_color)
-            cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+            # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
 
         # cv2.imshow("image",roi_color)
         # cv2.waitKey(0)
@@ -223,7 +241,7 @@ def lbpCascadeDetector(inputFilePath, scaleFactor, neighbours, goodPath, badPath
     detectedFace = lbpCascade.detectMultiScale(grayImage, scaleFactor, neighbours)
 
     if len(detectedFace) != 1:
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
     else:
         goodResult += 1
@@ -239,7 +257,7 @@ def lbpCascadeDetector(inputFilePath, scaleFactor, neighbours, goodPath, badPath
             roi_gray = grayImage[y:y + h, x:x + w]
             # croppedImage = cv2.clone
             # cv2.imwrite('WynikiAnalizy\\LBP\\Dobre\\' + pathlib.Path(inputFilePath).name, roi_color)
-            cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+            # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
 
         # cv2.imshow("image",roi_color)
         # cv2.waitKey(0)
@@ -254,12 +272,14 @@ def lbpCascadeDetector(inputFilePath, scaleFactor, neighbours, goodPath, badPath
     # cv2.waitKey(0)
 
 
-def dlibFaceDetector(inputFilePath, goodPath, badPath):
-    if printDetails:
-        file.writelines(
-            getTime + "\t" + "Histogram of Oriented Gradients: (neighbours:\t")
+def dlibFaceDetector(inputFilePath, resize, goodPath, badPath):
+    # if printDetails:
+    # file.writelines(
+    #     getTime + "\t" + "Histogram of Oriented Gradients: (neighbours:\t")
     global badResult, goodResult
     inputFile = cv2.imread(inputFilePath)
+
+    inputFile = imutils.resize(inputFile, resize)
     # ( Width [0], Height [1]
     # inputFile = imutils.resize(inputFile, 500)
     grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
@@ -267,7 +287,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
     print("width: " + str(width) + " height: " + str(height) + "\n")
     rects = detector(grayImage, 1)
     if len(rects) != 1:
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
     else:
         goodResult += 1
@@ -329,7 +349,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
                 cv2.circle(inputFile, (x, y), 1, (0, 0, 255), -1)
 
             # show the output image with the face detections + facial landmarks
-            cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+            # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
 
 
 def mtcnnDetector(inputFilePath, goodPath, badPath):
@@ -413,7 +433,7 @@ def dlibDeepLearningDetector(inputFilePath, resizeSize, upsample, goodPath, badP
     print("Number of faces detected: {}".format(len(dets)))
 
     if (len(dets) != 1):
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, copyColor)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, copyColor)
         badResult += 1
     else:
         goodResult += 1
@@ -446,7 +466,7 @@ def dlibDeepLearningDetector(inputFilePath, resizeSize, upsample, goodPath, badP
         cv2.rectangle(copyColor, (x, y), (x + w, y + h), (0, 255, 0), 2)
         # cv2.imshow("Output", copyColor)
         # cv2.waitKey(0)
-        cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, copyColor)
+        # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, copyColor)
 
     # rects.extend([d.rect for d in dets])
     #
@@ -455,109 +475,6 @@ def dlibDeepLearningDetector(inputFilePath, resizeSize, upsample, goodPath, badP
     # win.add_overlay(rects)
     # dlib.hit_enter_to_continue()
 
-
-# def researchModeExecutor(startOption, clear, value, lister, goodPath, badPath):
-#     global printDetails
-#     global goodResult, badResult
-#
-#     if startOption == 0:
-#         print("HaarCascade")
-#         removeAllResults(0)
-#         counter = 0
-#         for image in lister:
-#             print(image)
-#             print("Iteracja: " + str(counter))
-#             counter += 1
-#             haarCascadeFaceDetector(image, value[0], value[1], goodPath, badPath)
-#             # lbpCascadeDetector(image, 1.5, 5)
-#             # dlibFaceDetector(image)
-#             # deepLearningDetector(image, confidenceOfDetection, imageSizeToResize)
-#             if printDetails:
-#                 printDetails = False
-#         printDetails = True
-#         # file.writelines(getTime + "\t")
-#         file.writelines("Results:\t")
-#         file.writelines("Good:\t" + str(goodResult) + '\t')
-#         file.writelines("Bad:\t" + str(badResult) + '\t')
-#         file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-#         goodResult = 0
-#         badResult = 0
-#
-#
-#
-#
-#
-#     elif startOption == 1:
-#         print("LBP")
-#         removeAllResults(1)
-#         counter = 0
-#         for image in lister:
-#             print(image)
-#             print("Iteracja: " + str(counter))
-#             counter += 1
-#             lbpCascadeDetector(image, value[0], value[1], goodPath, badPath)
-#             # lbpCascadeDetector(image, 1.5, 5)
-#             # dlibFaceDetector(image)
-#             # deepLearningDetector(image, confidenceOfDetection, imageSizeToResize)
-#             if printDetails:
-#                 printDetails = False
-#         printDetails = True
-#         # file.writelines(getTime + "\t")
-#         file.writelines("Results:\t")
-#         file.writelines("Good:\t" + str(goodResult) + '\t')
-#         file.writelines("Bad:\t" + str(badResult) + '\t')
-#         file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-#         goodResult = 0
-#         badResult = 0
-#     elif startOption == 2:
-#         print("Histogram of Oriented Gradients")
-#         removeAllResults(2)
-#         counter = 0
-#         for image in lister:
-#             print(image)
-#             print("Iteracja: " + str(counter))
-#             counter += 1
-#             dlibFaceDetector(image, goodPath, badPath)
-#             # lbpCascadeDetector(image, 1.5, 5)
-#             # dlibFaceDetector(image)
-#             # deepLearningDetector(image, confidenceOfDetection, imageSizeToResize)
-#             if printDetails:
-#                 printDetails = False
-#         printDetails = True
-#         # file.writelines(getTime + "\t")
-#         file.writelines("Results:\t")
-#         file.writelines("Good:\t" + str(goodResult) + '\t')
-#         file.writelines("Bad:\t" + str(badResult) + '\t')
-#         file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-#         goodResult = 0
-#         badResult = 0
-#     elif startOption == 3:
-#         print("Single Shot Detector ")
-#         print("Histogram of Oriented Gradients")
-#         removeAllResults(3)
-#         counter = 0
-#         for image in lister:
-#             print(image)
-#             print("Iteracja: " + str(counter))
-#             counter += 1
-#             # dlibFaceDetector(image, goodPath, badPath)
-#             # lbpCascadeDetector(image, 1.5, 5)
-#             # dlibFaceDetector(image)
-#             # deepLearningDetector(image, confidenceOfDetection, imageSizeToResize)
-#             if printDetails:
-#                 printDetails = False
-#         printDetails = True
-#         # file.writelines(getTime + "\t")
-#         file.writelines("Results:\t")
-#         file.writelines("Good:\t" + str(goodResult) + '\t')
-#         file.writelines("Bad:\t" + str(badResult) + '\t')
-#         file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-#         goodResult = 0
-#         badResult = 0
-#
-#     elif startOption == 4:
-#         print("FaceNet")
-#
 
 def f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, beta):
     print("working hard")
@@ -963,133 +880,6 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     trueNegative) + "\tTotal:\t" + str(
                     truePositive + trueNegative + falsePositive + falseNegative) +
                 f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
-    #  globalConf, resizeSize,
-
-    # pathCore = personDefPath + str(i) + "\\" + getXTime + " DLCAFFE GLCONF" + str(
-    #     values[0]) + " RSSIZE " + str(
-    # elif (alghoritmName == "DLCAFFE"):
-    #     if (mode == "SICK"):
-    #         file.writelines("Positive\t")
-    #         print("DLCAFFE: Sick People")
-    #
-    #         pathCore = researchDefPath + "DLCAFFE\\" + getXTime + " DLCAFFE GLCONF " + str(
-    #             values[0]) + " RSSIZE " + str(
-    #             values[1]) + "\\"
-    #         pathCore = pathCore.replace(":", " ")
-    #
-    #         os.mkdir(pathCore)
-    #         pathGood = pathCore + "Dobre\\"
-    #         pathBad = pathCore + "Zle\\"
-    #         os.mkdir(pathGood)
-    #         os.mkdir(pathBad)
-    #         counter = 0
-    #         for image in positiveLister:
-    #             print(image)
-    #             print("Iteracja: " + str(counter))
-    #             counter += 1
-    #             lbpCascadeDetector(image, values[0], values[1], pathGood, pathBad)
-    #             if printDetails:
-    #                 printDetails = False
-    #         printDetails = True
-    #         file.writelines("Results:\t")
-    #         file.writelines("Good:\t" + str(goodResult) + '\t')
-    #         file.writelines("Bad:\t" + str(badResult) + '\t')
-    #         file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-    #         goodResult = 0
-    #         badResult = 0
-    #     elif (mode == "HEALTHY"):
-    #         print("LBP: Healthy People")
-    #         # if clear == 0 :
-    #         #     removeAllResults(00)
-    #         pathCore = personDefPath + getXTime + "DLCAFFE GLCONF " + str(values[0]) + " RSSIZE " + str(
-    #             values[1]) + "\\"
-    #         pathCore = pathCore.replace(":", " ")
-    #         os.mkdir(pathCore)
-    #         pathGood = pathCore + "Dobre\\"
-    #         pathBad = pathCore + "Zle\\"
-    #         pathGoodBad = pathCore + "Dobre_Nietrafione\\"
-    #         pathBadBad = pathCore + "Zle_Nietrafione\\"
-    #
-    #         os.mkdir(pathGood)
-    #         os.mkdir(pathBad)
-    #         os.mkdir(pathGoodBad)
-    #         os.mkdir(pathBadBad)
-    #
-    #         for i in range(1, 2, 1):
-    #             # pathCore = personDefPath + str(i) + "\\" + getXTime + " Haar SF " + str(values[0]) + " NB " + str(
-    #             #     values[1]) + "\\"
-    #
-    #             # os.mkdir(pathCore)
-    #
-    #             lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
-    #             # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
-    #             lister_bad = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Zle/*")
-    #
-    #             # file.writelines("Osoba " + str(i) + " " + "Dobre" + ":\t")
-    #             counter = 0
-    #             for image in lister_good:
-    #                 print(image)
-    #                 print("Iteracja: " + str(counter))
-    #                 counter += 1
-    #                 # caffeDeepLearningDetector(image, values[0], values[1], pathGood, pathGoodBad)
-    #                 if printDetails:
-    #                     printDetails = False
-    #             printDetails = True
-    #
-    #             truePositive += goodResult
-    #             falseNegative += badResult
-    #             # file.writelines("Results:\t")
-    #             # file.writelines("Good:\t" + str(goodResult) + '\t')
-    #             # file.writelines("Good_failed:\t" + str(badResult) + '\t')
-    #             # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-    #             goodResult = 0
-    #             badResult = 0
-    #
-    #             # file.writelines("Osoba " + str(i) + " " + "Srednie" + ":\t")
-    #             # counter = 0
-    #             # for image in lister_moderate:
-    #             #     print(image)
-    #             #     print("Iteracja: " + str(counter))
-    #             #     counter += 1
-    #             #     haarCascadeFaceDetector(image, values[0], values[1], pathGood, pathBad)
-    #             #     if printDetails:
-    #             #         printDetails = False
-    #             # printDetails = True
-    #             # file.writelines("Results:\t")
-    #             # file.writelines("Good:\t" + str(goodResult) + '\t')
-    #             # file.writelines("Bad:\t" + str(badResult) + '\t')
-    #             # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-    #             # goodResult = 0
-    #             # badResult = 0
-    #
-    #             # file.writelines("Osoba " + str(i) + " " + "Zle" + ":\t")
-    #             counter = 0
-    #             for image in lister_bad:
-    #                 print(image)
-    #                 print("Iteracja: " + str(counter))
-    #                 counter += 1
-    #                 # caffeDeepLearningDetector(image, values[0], values[1], pathBadBad, pathBad)
-    #                 if printDetails:
-    #                     printDetails = False
-    #             printDetails = True
-    #
-    #             falsePositive += badResult
-    #             trueNegative += goodResult
-    #             # file.writelines("Results:\t")
-    #             # file.writelines("Bad:\t" + str(goodResult) + '\t')
-    #             # file.writelines("Bad_failed:\t" + str(badResult) + '\t')
-    #             # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-    #             goodResult = 0
-    #             badResult = 0
-    #         # "DLCAFFE GLCONF " + str(values[0]) + " RSSIZE "
-    #         file.writelines(
-    #             getTime + "\tLBP :DLCAFFE:_GLCONF" + str(values[0]) + "_RSSIZE:_" + str(
-    #                 values[1]) + "\ttruePositive:\t" + str(truePositive) + "\tfalseNegative:\t" +
-    #             str(falseNegative) + "\tfalsePositive:\t" + str(
-    #                 falsePositive) + "\ttrueNegative:\t" + str(
-    #                 trueNegative) + "\tTotal:\t" + str(
-    #                 truePositive + trueNegative + falsePositive + falseNegative) +
-    #             f1ScoreComputer(truePositive, trueNegative, falsePositive, falseNegative, 1) + "\n")
 
     elif (alghoritmName == "CNNDLIB"):
         if (mode == "SICK"):
@@ -1293,7 +1083,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    dlibFaceDetector(image, pathGood, pathGoodBad)
+                    dlibFaceDetector(image, values[0], pathGood, pathGoodBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
@@ -1329,7 +1119,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    dlibFaceDetector(image, pathBadBad, pathBad)
+                    dlibFaceDetector(image, values[0], pathBadBad, pathBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
@@ -1375,14 +1165,10 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    dlibFaceDetector(image, pathGood, pathGoodBad)
+                    dlibFaceDetector(image, values[0], pathGood, pathGoodBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
-                # file.writelines("Results:\t")
-                # file.writelines("Good:\t" + str(goodResult) + '\t')
-                # file.writelines("Bad:\t" + str(badResult) + '\t')
-                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
                 truePositive += goodResult
                 falseNegative += badResult
                 goodResult = 0
@@ -1390,35 +1176,16 @@ def researchOrderer(alghoritmName, mode, values, clear):
 
                 # file.writelines("Osoba " + str(i) + " " + "Srednie" + ":\t")
                 counter = 0
-                # for image in lister_moderate:
-                #     print(image)
-                #     print("Iteracja: " + str(counter))
-                #     counter += 1
-                #     dlibFaceDetector(image, pathGood, pathBad)
-                #     if printDetails:
-                #         printDetails = False
-                # printDetails = True
-                # file.writelines("Results:\t")
-                # file.writelines("Good:\t" + str(goodResult) + '\t')
-                # file.writelines("Bad:\t" + str(badResult) + '\t')
-                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
-                # goodResult = 0
-                # badResult = 0
-                #
-                # file.writelines("Osoba " + str(i) + " " + "Zle" + ":\t")
-                # counter = 0
+
                 for image in lister_bad:
                     print(image)
                     print("Iteracja: " + str(counter))
                     counter += 1
-                    dlibFaceDetector(image, pathBadBad, pathBad)
+                    dlibFaceDetector(image, values[0], pathBadBad, pathBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
-                # file.writelines("Results:\t")
-                # file.writelines("Good:\t" + str(goodResult) + '\t')
-                # file.writelines("Bad:\t" + str(badResult) + '\t')
-                # file.writelines("Total:\t" + str(badResult + goodResult) + "\t\n")
+
                 falsePositive += badResult
                 trueNegative += goodResult
                 goodResult = 0
@@ -1674,18 +1441,1051 @@ def researchOrderer(alghoritmName, mode, values, clear):
 # researchOrderer("HAAR", "HEALTHY", [6, 3], 0)
 
 
-researchOrderer("HAAR", "SICK", [5, 8], 0)
-researchOrderer("LBP", "SICK", [5, 8], 0)
-researchOrderer("CNNDLIB", "SICK", [350, 2], 0)
-researchOrderer("HOG", "SICK", 0, 0)
-researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.809], 0)
+# researchOrderer("HAAR", "SICK", [5, 8], 0)
+# researchOrderer("LBP", "SICK", [5, 8], 0)
+# researchOrderer("CNNDLIB", "SICK", [350, 2], 0)
+# researchOrderer("HOG", "SICK", 0, 0)
+# researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.809], 0)
 
 
+# researchOrderer("HAAR", "HEALTHY", [5, 8], 0)
+# researchOrderer("LBP", "HEALTHY", [5, 8], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [350, 2], 0)
+# researchOrderer("HOG", "HEALTHY", 0, 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809], 0)
 
-researchOrderer("HAAR", "HEALTHY", [5, 8], 0)
-researchOrderer("LBP", "HEALTHY", [5, 8], 0)
-researchOrderer("CNNDLIB", "HEALTHY", [350, 2], 0)
-researchOrderer("HOG", "HEALTHY", 0, 0)
-researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809], 0)
 
+# researchOrderer("HAAR", "HEALTHY", [1.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [1.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [1.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [1.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [1.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [1.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [1.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [1.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [1.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [2.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [3.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [4.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [5.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [6.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [7.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [8.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [9.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.1, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.2, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.3, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.4, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.5, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.6, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.7, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.8, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [10.9, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [11, 3], 0)
+# researchOrderer("HAAR", "HEALTHY", [11.1, 3], 0)
+
+# researchOrderer("LBP", "HEALTHY", [1.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [1.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [1.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [1.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [1.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [1.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [1.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [1.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [1.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [2.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [3.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [4.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [5.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [6.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [7.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [8.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [9.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.1, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.2, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.3, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.4, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.5, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.6, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.7, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.8, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [10.9, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [11, 3], 0)
+# researchOrderer("LBP", "HEALTHY", [11.1, 3], 0)
+
+
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.01], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.02], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.03], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.04], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.05], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.06], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.07], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.08], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.09], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.1], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.11], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.12], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.13], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.14], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.15], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.16], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.17], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.18], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.19], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.2], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.21], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.22], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.23], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.24], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.25], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.26], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.27], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.28], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.29], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.3], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.31], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.32], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.33], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.34], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.35], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.36], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.37], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.38], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.39], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.4], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.41], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.42], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.43], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.44], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.45], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.46], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.47], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.48], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.49], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.5], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.51], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.52], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.53], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.54], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.55], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.56], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.57], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.58], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.59], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.6], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.61], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.62], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.63], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.64], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.65], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.66], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.67], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.68], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.69], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.7], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.71], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.72], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.73], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.74], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.75], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.76], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.77], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.78], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.79], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.8], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.81], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.82], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.83], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.84], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.85], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.86], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.87], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.88], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.89], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.9], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.91], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.92], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.93], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.94], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.95], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.96], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.97], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.98], 0)
+# researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.99], 0)
+
+
+# researchOrderer("CNNDLIB", "HEALTHY", [700, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [695, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [690, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [685, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [680, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [675, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [670, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [665, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [660, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [655, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [650, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [645, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [640, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [635, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [630, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [625, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [620, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [615, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [610, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [605, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [600, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [595, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [590, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [585, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [580, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [575, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [570, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [565, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [560, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [555, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [550, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [545, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [540, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [535, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [530, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [525, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [520, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [515, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [510, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [505, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [500, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [495, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [490, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [485, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [480, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [475, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [470, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [465, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [460, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [455, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [450, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [445, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [440, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [435, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [430, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [425, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [420, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [415, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [410, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [405, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [400, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [395, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [390, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [385, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [380, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [375, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [370, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [365, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [360, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [355, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [350, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [345, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [340, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [335, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [330, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [325, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [320, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [315, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [310, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [305, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [300, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [295, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [290, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [285, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [280, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [275, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [270, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [265, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [260, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [255, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [250, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [245, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [240, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [235, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [230, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [225, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [220, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [215, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [210, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [205, 1], 0)
+# researchOrderer("CNNDLIB", "HEALTHY", [200, 1], 0)
+
+
+# researchOrderer("HOG", "HEALTHY", [700], 0)
+# researchOrderer("HOG", "HEALTHY", [695], 0)
+# researchOrderer("HOG", "HEALTHY", [690], 0)
+# researchOrderer("HOG", "HEALTHY", [685], 0)
+# researchOrderer("HOG", "HEALTHY", [680], 0)
+# researchOrderer("HOG", "HEALTHY", [675], 0)
+# researchOrderer("HOG", "HEALTHY", [670], 0)
+# researchOrderer("HOG", "HEALTHY", [665], 0)
+# researchOrderer("HOG", "HEALTHY", [660], 0)
+# researchOrderer("HOG", "HEALTHY", [655], 0)
+# researchOrderer("HOG", "HEALTHY", [650], 0)
+# researchOrderer("HOG", "HEALTHY", [645], 0)
+# researchOrderer("HOG", "HEALTHY", [640], 0)
+# researchOrderer("HOG", "HEALTHY", [635], 0)
+# researchOrderer("HOG", "HEALTHY", [630], 0)
+# researchOrderer("HOG", "HEALTHY", [625], 0)
+# researchOrderer("HOG", "HEALTHY", [620], 0)
+# researchOrderer("HOG", "HEALTHY", [615], 0)
+# researchOrderer("HOG", "HEALTHY", [610], 0)
+# researchOrderer("HOG", "HEALTHY", [605], 0)
+# researchOrderer("HOG", "HEALTHY", [600], 0)
+# researchOrderer("HOG", "HEALTHY", [595], 0)
+# researchOrderer("HOG", "HEALTHY", [590], 0)
+# researchOrderer("HOG", "HEALTHY", [585], 0)
+# researchOrderer("HOG", "HEALTHY", [580], 0)
+# researchOrderer("HOG", "HEALTHY", [575], 0)
+# researchOrderer("HOG", "HEALTHY", [570], 0)
+# researchOrderer("HOG", "HEALTHY", [565], 0)
+# researchOrderer("HOG", "HEALTHY", [560], 0)
+# researchOrderer("HOG", "HEALTHY", [555], 0)
+# researchOrderer("HOG", "HEALTHY", [550], 0)
+# researchOrderer("HOG", "HEALTHY", [545], 0)
+# researchOrderer("HOG", "HEALTHY", [540], 0)
+# researchOrderer("HOG", "HEALTHY", [535], 0)
+# researchOrderer("HOG", "HEALTHY", [530], 0)
+# researchOrderer("HOG", "HEALTHY", [525], 0)
+# researchOrderer("HOG", "HEALTHY", [520], 0)
+# researchOrderer("HOG", "HEALTHY", [515], 0)
+# researchOrderer("HOG", "HEALTHY", [510], 0)
+# researchOrderer("HOG", "HEALTHY", [505], 0)
+# researchOrderer("HOG", "HEALTHY", [500], 0)
+# researchOrderer("HOG", "HEALTHY", [495], 0)
+# researchOrderer("HOG", "HEALTHY", [490], 0)
+# researchOrderer("HOG", "HEALTHY", [485], 0)
+# researchOrderer("HOG", "HEALTHY", [480], 0)
+# researchOrderer("HOG", "HEALTHY", [475], 0)
+# researchOrderer("HOG", "HEALTHY", [470], 0)
+# researchOrderer("HOG", "HEALTHY", [465], 0)
+# researchOrderer("HOG", "HEALTHY", [460], 0)
+# researchOrderer("HOG", "HEALTHY", [455], 0)
+# researchOrderer("HOG", "HEALTHY", [450], 0)
+# researchOrderer("HOG", "HEALTHY", [445], 0)
+# researchOrderer("HOG", "HEALTHY", [440], 0)
+# researchOrderer("HOG", "HEALTHY", [435], 0)
+# researchOrderer("HOG", "HEALTHY", [430], 0)
+# researchOrderer("HOG", "HEALTHY", [425], 0)
+# researchOrderer("HOG", "HEALTHY", [420], 0)
+# researchOrderer("HOG", "HEALTHY", [415], 0)
+# researchOrderer("HOG", "HEALTHY", [410], 0)
+# researchOrderer("HOG", "HEALTHY", [405], 0)
+# researchOrderer("HOG", "HEALTHY", [400], 0)
+# researchOrderer("HOG", "HEALTHY", [395], 0)
+# researchOrderer("HOG", "HEALTHY", [390], 0)
+# researchOrderer("HOG", "HEALTHY", [385], 0)
+# researchOrderer("HOG", "HEALTHY", [380], 0)
+# researchOrderer("HOG", "HEALTHY", [375], 0)
+# researchOrderer("HOG", "HEALTHY", [370], 0)
+# researchOrderer("HOG", "HEALTHY", [365], 0)
+# researchOrderer("HOG", "HEALTHY", [360], 0)
+# researchOrderer("HOG", "HEALTHY", [355], 0)
+# researchOrderer("HOG", "HEALTHY", [350], 0)
+# researchOrderer("HOG", "HEALTHY", [345], 0)
+# researchOrderer("HOG", "HEALTHY", [340], 0)
+# researchOrderer("HOG", "HEALTHY", [335], 0)
+# researchOrderer("HOG", "HEALTHY", [330], 0)
+# researchOrderer("HOG", "HEALTHY", [325], 0)
+# researchOrderer("HOG", "HEALTHY", [320], 0)
+# researchOrderer("HOG", "HEALTHY", [315], 0)
+# researchOrderer("HOG", "HEALTHY", [310], 0)
+# researchOrderer("HOG", "HEALTHY", [305], 0)
+# researchOrderer("HOG", "HEALTHY", [300], 0)
+# researchOrderer("HOG", "HEALTHY", [295], 0)
+# researchOrderer("HOG", "HEALTHY", [290], 0)
+# researchOrderer("HOG", "HEALTHY", [285], 0)
+# researchOrderer("HOG", "HEALTHY", [280], 0)
+# researchOrderer("HOG", "HEALTHY", [275], 0)
+# researchOrderer("HOG", "HEALTHY", [270], 0)
+# researchOrderer("HOG", "HEALTHY", [265], 0)
+# researchOrderer("HOG", "HEALTHY", [260], 0)
+# researchOrderer("HOG", "HEALTHY", [255], 0)
+# researchOrderer("HOG", "HEALTHY", [250], 0)
+# researchOrderer("HOG", "HEALTHY", [245], 0)
+# researchOrderer("HOG", "HEALTHY", [240], 0)
+# researchOrderer("HOG", "HEALTHY", [235], 0)
+# researchOrderer("HOG", "HEALTHY", [230], 0)
+# researchOrderer("HOG", "HEALTHY", [225], 0)
+# researchOrderer("HOG", "HEALTHY", [220], 0)
+# researchOrderer("HOG", "HEALTHY", [215], 0)
+# researchOrderer("HOG", "HEALTHY", [210], 0)
+# researchOrderer("HOG", "HEALTHY", [205], 0)
+# researchOrderer("HOG", "HEALTHY", [200], 0)
+
+
+#############################################################
+#############################################################
+#############################################################
+
+
+# researchOrderer("HAAR", "SICK", [1.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [1.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [1.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [1.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [1.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [1.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [1.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [1.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [1.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [2, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [2.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [3, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [3.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [4, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [4.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [5, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [5.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [6, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [6.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [7, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [7.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [8, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [8.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [9, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [9.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [10, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.1, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.2, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.3, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.4, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.5, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.6, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.7, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.8, 3], 0)
+# researchOrderer("HAAR", "SICK", [10.9, 3], 0)
+# researchOrderer("HAAR", "SICK", [11, 3], 0)
+# researchOrderer("HAAR", "SICK", [11.1, 3], 0)
+# 
+
+# researchOrderer("LBP", "SICK", [1.1, 3], 0)
+# researchOrderer("LBP", "SICK", [1.2, 3], 0)
+# researchOrderer("LBP", "SICK", [1.3, 3], 0)
+# researchOrderer("LBP", "SICK", [1.4, 3], 0)
+# researchOrderer("LBP", "SICK", [1.5, 3], 0)
+# researchOrderer("LBP", "SICK", [1.6, 3], 0)
+# researchOrderer("LBP", "SICK", [1.7, 3], 0)
+# researchOrderer("LBP", "SICK", [1.8, 3], 0)
+# researchOrderer("LBP", "SICK", [1.9, 3], 0)
+# researchOrderer("LBP", "SICK", [2, 3], 0)
+# researchOrderer("LBP", "SICK", [2.1, 3], 0)
+# researchOrderer("LBP", "SICK", [2.2, 3], 0)
+# researchOrderer("LBP", "SICK", [2.3, 3], 0)
+# researchOrderer("LBP", "SICK", [2.4, 3], 0)
+# researchOrderer("LBP", "SICK", [2.5, 3], 0)
+# researchOrderer("LBP", "SICK", [2.6, 3], 0)
+# researchOrderer("LBP", "SICK", [2.7, 3], 0)
+# researchOrderer("LBP", "SICK", [2.8, 3], 0)
+# researchOrderer("LBP", "SICK", [2.9, 3], 0)
+# researchOrderer("LBP", "SICK", [3, 3], 0)
+# researchOrderer("LBP", "SICK", [3.1, 3], 0)
+# researchOrderer("LBP", "SICK", [3.2, 3], 0)
+# researchOrderer("LBP", "SICK", [3.3, 3], 0)
+# researchOrderer("LBP", "SICK", [3.4, 3], 0)
+# researchOrderer("LBP", "SICK", [3.5, 3], 0)
+# researchOrderer("LBP", "SICK", [3.6, 3], 0)
+# researchOrderer("LBP", "SICK", [3.7, 3], 0)
+# researchOrderer("LBP", "SICK", [3.8, 3], 0)
+# researchOrderer("LBP", "SICK", [3.9, 3], 0)
+# researchOrderer("LBP", "SICK", [4, 3], 0)
+# researchOrderer("LBP", "SICK", [4.1, 3], 0)
+# researchOrderer("LBP", "SICK", [4.2, 3], 0)
+# researchOrderer("LBP", "SICK", [4.3, 3], 0)
+# researchOrderer("LBP", "SICK", [4.4, 3], 0)
+# researchOrderer("LBP", "SICK", [4.5, 3], 0)
+# researchOrderer("LBP", "SICK", [4.6, 3], 0)
+# researchOrderer("LBP", "SICK", [4.7, 3], 0)
+# researchOrderer("LBP", "SICK", [4.8, 3], 0)
+# researchOrderer("LBP", "SICK", [4.9, 3], 0)
+# researchOrderer("LBP", "SICK", [5, 3], 0)
+# researchOrderer("LBP", "SICK", [5.1, 3], 0)
+# researchOrderer("LBP", "SICK", [5.2, 3], 0)
+# researchOrderer("LBP", "SICK", [5.3, 3], 0)
+# researchOrderer("LBP", "SICK", [5.4, 3], 0)
+# researchOrderer("LBP", "SICK", [5.5, 3], 0)
+# researchOrderer("LBP", "SICK", [5.6, 3], 0)
+# researchOrderer("LBP", "SICK", [5.7, 3], 0)
+# researchOrderer("LBP", "SICK", [5.8, 3], 0)
+# researchOrderer("LBP", "SICK", [5.9, 3], 0)
+# researchOrderer("LBP", "SICK", [6, 3], 0)
+# researchOrderer("LBP", "SICK", [6.1, 3], 0)
+# researchOrderer("LBP", "SICK", [6.2, 3], 0)
+# researchOrderer("LBP", "SICK", [6.3, 3], 0)
+# researchOrderer("LBP", "SICK", [6.4, 3], 0)
+# researchOrderer("LBP", "SICK", [6.5, 3], 0)
+# researchOrderer("LBP", "SICK", [6.6, 3], 0)
+# researchOrderer("LBP", "SICK", [6.7, 3], 0)
+# researchOrderer("LBP", "SICK", [6.8, 3], 0)
+# researchOrderer("LBP", "SICK", [6.9, 3], 0)
+# researchOrderer("LBP", "SICK", [7, 3], 0)
+# researchOrderer("LBP", "SICK", [7.1, 3], 0)
+# researchOrderer("LBP", "SICK", [7.2, 3], 0)
+# researchOrderer("LBP", "SICK", [7.3, 3], 0)
+# researchOrderer("LBP", "SICK", [7.4, 3], 0)
+# researchOrderer("LBP", "SICK", [7.5, 3], 0)
+# researchOrderer("LBP", "SICK", [7.6, 3], 0)
+# researchOrderer("LBP", "SICK", [7.7, 3], 0)
+# researchOrderer("LBP", "SICK", [7.8, 3], 0)
+# researchOrderer("LBP", "SICK", [7.9, 3], 0)
+# researchOrderer("LBP", "SICK", [8, 3], 0)
+# researchOrderer("LBP", "SICK", [8.1, 3], 0)
+# researchOrderer("LBP", "SICK", [8.2, 3], 0)
+# researchOrderer("LBP", "SICK", [8.3, 3], 0)
+# researchOrderer("LBP", "SICK", [8.4, 3], 0)
+# researchOrderer("LBP", "SICK", [8.5, 3], 0)
+# researchOrderer("LBP", "SICK", [8.6, 3], 0)
+# researchOrderer("LBP", "SICK", [8.7, 3], 0)
+# researchOrderer("LBP", "SICK", [8.8, 3], 0)
+# researchOrderer("LBP", "SICK", [8.9, 3], 0)
+# researchOrderer("LBP", "SICK", [9, 3], 0)
+# researchOrderer("LBP", "SICK", [9.1, 3], 0)
+# researchOrderer("LBP", "SICK", [9.2, 3], 0)
+# researchOrderer("LBP", "SICK", [9.3, 3], 0)
+# researchOrderer("LBP", "SICK", [9.4, 3], 0)
+# researchOrderer("LBP", "SICK", [9.5, 3], 0)
+# researchOrderer("LBP", "SICK", [9.6, 3], 0)
+# researchOrderer("LBP", "SICK", [9.7, 3], 0)
+# researchOrderer("LBP", "SICK", [9.8, 3], 0)
+# researchOrderer("LBP", "SICK", [9.9, 3], 0)
+# researchOrderer("LBP", "SICK", [10, 3], 0)
+# researchOrderer("LBP", "SICK", [10.1, 3], 0)
+# researchOrderer("LBP", "SICK", [10.2, 3], 0)
+# researchOrderer("LBP", "SICK", [10.3, 3], 0)
+# researchOrderer("LBP", "SICK", [10.4, 3], 0)
+# researchOrderer("LBP", "SICK", [10.5, 3], 0)
+# researchOrderer("LBP", "SICK", [10.6, 3], 0)
+# researchOrderer("LBP", "SICK", [10.7, 3], 0)
+# researchOrderer("LBP", "SICK", [10.8, 3], 0)
+# researchOrderer("LBP", "SICK", [10.9, 3], 0)
+# researchOrderer("LBP", "SICK", [11, 3], 0)
+# researchOrderer("LBP", "SICK", [11.1, 3], 0)
+# 
+
+
+# researchOrderer("HOG", "SICK", [700], 0)
+# researchOrderer("HOG", "SICK", [695], 0)
+# researchOrderer("HOG", "SICK", [690], 0)
+# researchOrderer("HOG", "SICK", [685], 0)
+# researchOrderer("HOG", "SICK", [680], 0)
+# researchOrderer("HOG", "SICK", [675], 0)
+# researchOrderer("HOG", "SICK", [670], 0)
+# researchOrderer("HOG", "SICK", [665], 0)
+# researchOrderer("HOG", "SICK", [660], 0)
+# researchOrderer("HOG", "SICK", [655], 0)
+# researchOrderer("HOG", "SICK", [650], 0)
+# researchOrderer("HOG", "SICK", [645], 0)
+# researchOrderer("HOG", "SICK", [640], 0)
+# researchOrderer("HOG", "SICK", [635], 0)
+# researchOrderer("HOG", "SICK", [630], 0)
+# researchOrderer("HOG", "SICK", [625], 0)
+# researchOrderer("HOG", "SICK", [620], 0)
+# researchOrderer("HOG", "SICK", [615], 0)
+# researchOrderer("HOG", "SICK", [610], 0)
+# researchOrderer("HOG", "SICK", [605], 0)
+# researchOrderer("HOG", "SICK", [600], 0)
+# researchOrderer("HOG", "SICK", [595], 0)
+# researchOrderer("HOG", "SICK", [590], 0)
+# researchOrderer("HOG", "SICK", [585], 0)
+# researchOrderer("HOG", "SICK", [580], 0)
+# researchOrderer("HOG", "SICK", [575], 0)
+# researchOrderer("HOG", "SICK", [570], 0)
+# researchOrderer("HOG", "SICK", [565], 0)
+# researchOrderer("HOG", "SICK", [560], 0)
+# researchOrderer("HOG", "SICK", [555], 0)
+# researchOrderer("HOG", "SICK", [550], 0)
+# researchOrderer("HOG", "SICK", [545], 0)
+# researchOrderer("HOG", "SICK", [540], 0)
+# researchOrderer("HOG", "SICK", [535], 0)
+# researchOrderer("HOG", "SICK", [530], 0)
+# researchOrderer("HOG", "SICK", [525], 0)
+# researchOrderer("HOG", "SICK", [520], 0)
+# researchOrderer("HOG", "SICK", [515], 0)
+# researchOrderer("HOG", "SICK", [510], 0)
+# researchOrderer("HOG", "SICK", [505], 0)
+# researchOrderer("HOG", "SICK", [500], 0)
+# researchOrderer("HOG", "SICK", [495], 0)
+# researchOrderer("HOG", "SICK", [490], 0)
+# researchOrderer("HOG", "SICK", [485], 0)
+# researchOrderer("HOG", "SICK", [480], 0)
+# researchOrderer("HOG", "SICK", [475], 0)
+# researchOrderer("HOG", "SICK", [470], 0)
+# researchOrderer("HOG", "SICK", [465], 0)
+# researchOrderer("HOG", "SICK", [460], 0)
+# researchOrderer("HOG", "SICK", [455], 0)
+# researchOrderer("HOG", "SICK", [450], 0)
+# researchOrderer("HOG", "SICK", [445], 0)
+# researchOrderer("HOG", "SICK", [440], 0)
+# researchOrderer("HOG", "SICK", [435], 0)
+# researchOrderer("HOG", "SICK", [430], 0)
+# researchOrderer("HOG", "SICK", [425], 0)
+# researchOrderer("HOG", "SICK", [420], 0)
+# researchOrderer("HOG", "SICK", [415], 0)
+# researchOrderer("HOG", "SICK", [410], 0)
+# researchOrderer("HOG", "SICK", [405], 0)
+# researchOrderer("HOG", "SICK", [400], 0)
+################################################################################
+
+# researchOrderer("HOG", "SICK", [395], 0)
+# researchOrderer("HOG", "SICK", [390], 0)
+# researchOrderer("HOG", "SICK", [385], 0)
+# researchOrderer("HOG", "SICK", [380], 0)
+# researchOrderer("HOG", "SICK", [375], 0)
+# researchOrderer("HOG", "SICK", [370], 0)
+# researchOrderer("HOG", "SICK", [365], 0)
+# researchOrderer("HOG", "SICK", [360], 0)
+# researchOrderer("HOG", "SICK", [355], 0)
+# researchOrderer("HOG", "SICK", [350], 0)
+# researchOrderer("HOG", "SICK", [345], 0)
+# researchOrderer("HOG", "SICK", [340], 0)
+# researchOrderer("HOG", "SICK", [335], 0)
+# researchOrderer("HOG", "SICK", [330], 0)
+# researchOrderer("HOG", "SICK", [325], 0)
+# researchOrderer("HOG", "SICK", [320], 0)
+# researchOrderer("HOG", "SICK", [315], 0)
+# researchOrderer("HOG", "SICK", [310], 0)
+# researchOrderer("HOG", "SICK", [305], 0)
+# researchOrderer("HOG", "SICK", [300], 0)
+
+# researchOrderer("HOG", "SICK", [295], 0)
+# researchOrderer("HOG", "SICK", [290], 0)
+# researchOrderer("HOG", "SICK", [285], 0)
+# researchOrderer("HOG", "SICK", [280], 0)
+# researchOrderer("HOG", "SICK", [275], 0)
+# researchOrderer("HOG", "SICK", [270], 0)
+# researchOrderer("HOG", "SICK", [265], 0)
+# researchOrderer("HOG", "SICK", [260], 0)
+# researchOrderer("HOG", "SICK", [255], 0)
+# researchOrderer("HOG", "SICK", [250], 0)
+# researchOrderer("HOG", "SICK", [245], 0)
+# researchOrderer("HOG", "SICK", [240], 0)
+# researchOrderer("HOG", "SICK", [235], 0)
+# researchOrderer("HOG", "SICK", [230], 0)
+# researchOrderer("HOG", "SICK", [225], 0)
+# researchOrderer("HOG", "SICK", [220], 0)
+# researchOrderer("HOG", "SICK", [215], 0)
+# researchOrderer("HOG", "SICK", [210], 0)
+# researchOrderer("HOG", "SICK", [205], 0)
+# researchOrderer("HOG", "SICK", [200], 0)
+
+
+#
+# researchOrderer("CNNDLIB", "SICK", [700, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [695, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [690, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [685, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [680, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [675, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [670, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [665, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [660, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [655, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [650, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [645, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [640, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [635, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [630, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [625, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [620, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [615, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [610, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [605, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [600, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [595, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [590, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [585, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [580, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [575, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [570, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [565, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [560, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [555, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [550, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [545, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [540, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [535, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [530, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [525, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [520, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [515, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [510, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [505, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [500, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [495, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [490, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [485, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [480, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [475, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [470, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [465, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [460, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [455, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [450, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [445, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [440, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [435, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [430, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [425, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [420, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [415, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [410, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [405, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [400, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [395, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [390, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [385, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [380, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [375, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [370, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [365, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [360, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [355, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [350, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [345, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [340, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [335, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [330, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [325, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [320, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [315, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [310, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [305, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [300, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [295, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [290, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [285, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [280, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [275, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [270, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [265, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [260, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [255, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [250, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [245, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [240, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [235, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [230, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [225, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [220, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [215, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [210, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [205, 1], 0)
+# researchOrderer("CNNDLIB", "SICK", [200, 1], 0)
+
+
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.01], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.02], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.03], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.04], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.05], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.06], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.07], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.08], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.09], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.1], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.11], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.12], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.13], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.14], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.15], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.16], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.17], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.18], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.19], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.2], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.21], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.22], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.23], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.24], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.25], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.26], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.27], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.28], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.29], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.3], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.31], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.32], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.33], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.34], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.35], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.36], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.37], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.38], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.39], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.4], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.41], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.42], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.43], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.44], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.45], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.46], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.47], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.48], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.49], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.5], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.51], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.52], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.53], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.54], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.55], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.56], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.57], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.58], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.59], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.6], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.61], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.62], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.63], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.64], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.65], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.66], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.67], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.68], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.69], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.7], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.71], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.72], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.73], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.74], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.75], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.76], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.77], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.78], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.79], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.8], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.81], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.82], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.83], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.84], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.85], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.86], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.87], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.88], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.89], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.9], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.91], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.92], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.93], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.94], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.95], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.96], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.97], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.98], 0)
+researchOrderer("MTCNN", "SICK", [[0.2, 0.5, 0.8], 0.99], 0)
 file.close()
