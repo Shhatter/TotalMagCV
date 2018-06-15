@@ -389,7 +389,16 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
 def getFace(inputFilePath, threshold, factor, goodPath, badPath):
     global goodResult, badResult
     inputFile = cv2.imread(inputFilePath)
-    inputFile = imutils.resize(inputFile, width=1100)
+    height, width = inputFile.shape[:2]
+    if (width < 600 or height < 600):
+        inputFile = imutils.resize(inputFile, 600)
+        height, width = inputFile.shape[:2]
+    # elif (width > 2000 or height > 2000):
+    #     inputFile = imutils.resize(inputFile, 1500)
+    #     height, width = inputFile.shape[:2]
+    # else:
+    #     inputFile = imutils.resize(inputFile, width=1100)
+
     faces = []
     height, width = inputFile.shape[:2]
     bounding_boxes, _ = detect_face.detect_face(inputFile, int(width * 0.2), pnet, rnet, onet, threshold, factor)
@@ -403,6 +412,8 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
         # cv2.imshow("image", inputFile)
         # cv2.waitKey(0)
         badResult += 1
+        # cv2.imshow("odrzucony na rozpoznaniu",inputFile)
+        # cv2.waitKey(0)
 
     elif (len(bounding_boxes) == 1):
 
@@ -432,8 +443,8 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
             elif hPoint > height:
                 hPoint = height - 1
 
-            # cv2.rectangle(inputFile, (x, y),
-            #               (wPoint, hPoint), (0, 255, 0), 2)
+            cv2.rectangle(inputFile, (x, y),
+                          (wPoint, hPoint), (0, 255, 0), 2)
             goodResult += 1
             # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
             rect = dlib.rectangle(x, y, wPoint, hPoint)
@@ -441,6 +452,8 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
         else:
             cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
             badResult += 1
+            # cv2.imshow("odrzucony na rozpoznaniu",inputFile)
+            # cv2.waitKey(0)
 
     elif (len(bounding_boxes) != 1):
 
@@ -481,8 +494,8 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
 
             rect = dlib.rectangle(x, y, wPoint, hPoint)
 
-            # cv2.rectangle(inputFile, (x, y),
-            #               (wPoint, hPoint), (0, 255, 0), 2)
+            cv2.rectangle(inputFile, (x, y),
+                          (wPoint, hPoint), (0, 255, 0), 2)
             goodResult += 1
 
             # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
@@ -490,54 +503,20 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
         cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
 
+        # cv2.imshow("odrzucony na rozpoznaniu",inputFile)
+        # cv2.waitKey(0)
+
     if not rect == None:
-        # ##### sprawdzenie profilowym harre'a czy nie ma zdjecia z profilu ( dla pewnosci )
-        # quarterHalfOfw = int((wPoint - x) * 0.25)
-        # quarterHalfOfh = int((hPoint - y) * 0.25)
-        # x = x - quarterHalfOfw
-        # y = y - quarterHalfOfh
-        # hPoint = hPoint + quarterHalfOfh
-        # wPoint = wPoint + quarterHalfOfw
-        # if x < 0:
-        #     x = 0
-        # elif x > width:
-        #     x = width - 1
-        #
-        # if (y < 0):
-        #     y = 0
-        # elif y > height:
-        #     y = height - 1
-        #
-        # if wPoint < 0:
-        #     wPoint = 0
-        # elif wPoint > width:
-        #     wPoint = width - 1
-        #
-        # if (hPoint < 0):
-        #     hPoint = 0
-        # elif hPoint > height:
-        #     hPoint = height - 1
-        #
-        # cropped = inputFile[y:y + (hPoint - y), x:x + (wPoint - x)]
-        # detectedFace = harrProfileFaceCascade.detectMultiScale(cropped, 2, 3,
-        #                                                 minSize=(int((wPoint - x) * 0.5), int((hPoint - y) * 0.5)))
-        # if len(detectedFace) == 1:
-        #     # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
-        #     for x, y, w, h in detectedFace:
-        #         # Pokazanie że wykrywa twarz - można pominąć
-        #         cv2.rectangle(cropped, (x, y), (x + w, y + int(h + (h * 0.2))), (255, 0, 0), 2)
-        #         cv2.imshow("duddd", cropped)
-        #         cv2.waitKey(0)
-        #
-        # #####
 
         grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
         shape = predictor(grayImage, rect)
         shape = face_utils.shape_to_np(shape)
 
-        # for (x, y) in shape:
-        #     cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
+        for (x, y) in shape:
+            cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
         # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imshow("test",inputFile)
+        # cv2.waitKey(0)
 
         fp0 = [shape[0][0], shape[0][1]]
         fp1 = [shape[1][0], shape[1][1]]
@@ -608,10 +587,11 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
         fp66 = [shape[66][0], shape[66][1]]
         fp67 = [shape[67][0], shape[67][1]]
 
-        fa = FaceAligner(predictor, desiredFaceWidth=width, desiredFaceHeight=height, desiredLeftEye=(0.39, 0.39))
+        fa = FaceAligner(predictor, desiredFaceWidth=int(width * 1.5), desiredFaceHeight=int(height * 1.5),
+                         desiredLeftEye=(0.40, 0.40))  # 36
 
-        sizeMouthFactor = 0.666
-        sizeEyeFactor = 0.6  # 0.5
+        sizeMouthFactor = 0.5
+        sizeEyeFactor = 0.5  # 0.5
         # xCenter = (int)((w / 2) + x)
         # yCenter = (int)((h / 2) + y)
         lSideMouthLength = math.sqrt(math.pow(fp48[0] - fp4[0], 2) + (math.pow(fp48[1] - fp4[1], 2)))
@@ -622,17 +602,22 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
         if ((lSideMouthLength * sizeMouthFactor) > rSideMounthLength) or (
                 (rSideMounthLength * sizeMouthFactor) > lSideMouthLength) or (
                 (lSideEyeLength * sizeEyeFactor) > rSideEyeLength) or (
-                (rSideEyeLength * sizeEyeFactor) > lSideEyeLength):  #
-            grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
-            for (x, y) in shape:
-                cv2.circle(grayImage, (x, y), 1, (0, 0, 255), 5)
-
+                (
+                        rSideEyeLength * sizeEyeFactor) > lSideEyeLength):  # todo : dodać korektę na zmianę odległości kącików ust na coś innego
+            # grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
+            # for (x, y) in shape:
+            #     cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
+            # cv2.imshow("test", inputFile)
+            # cv2.waitKey(0)
             # cv2.circle(grayImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
-            cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, grayImage)
+            # cv2.imshow("odrzucony na odchyleniach",inputFile)
+            # cv2.waitKey(0)
+            cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         else:
             grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
             faceAligned = fa.align(inputFile, grayImage, rect)
-            # cv2.imshow("Original", grayImageAligned)
+            # cv2.imshow("Original", faceAligned)
+            # cv2.waitKey(0)
 
             ################# poprawka
             bounding_boxes, _ = detect_face.detect_face(faceAligned, int(width * 0.2), pnet, rnet, onet, threshold,
@@ -740,11 +725,14 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
                 shape = face_utils.shape_to_np(shape)
                 for (xx, yy) in shape:
                     # xp1 = shape[0,0]
-                    cv2.circle(faceAligned, (xx, yy), 1, (0, 0, 255), 5)
+                    cv2.circle(faceAligned, (xx, yy), 2, (0, 0, 255), 5)
 
+                # cv2.imshow("analysed",faceAligned)
+                # cv2.waitKey(0)
                 fp4 = [shape[4][0], shape[4][1]]
                 fp12 = [shape[12][0], shape[12][1]]
-                totalFaceWidth = math.sqrt(math.pow(fp12[0] - fp4[0], 2) + (math.pow(fp12[1] - fp4[1], 2)))
+                totalFaceWidth = math.sqrt(math.pow(fp12[0] - fp4[0], 2) + (math.pow(fp12[1] - fp4[1],
+                                                                                     2)))  # TODO : dodać bądź zmienić warunek z szerokości twarzy na szerokość oczu
                 rectWidth = (math.sqrt(math.pow(x - wPoint, 2) + (math.pow(y - y, 2))))
                 rectHeight = (math.sqrt(math.pow(y - hPoint, 2) + (math.pow(x - x, 2))))
                 halfFaceRectWidth = 0.5 * rectWidth
@@ -790,7 +778,8 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
                     cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceAligned)
 
                 else:
-                    print("Zdjecie odrzucone")
+                    # cv2.imshow("odrzucony na ostatniej walidacji",faceAligned)
+                    # cv2.waitKey(0)
                     cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, faceAligned)
                     # cv2.imshow("Aligned", faceAligned)
                     # cv2.waitKey(0)
@@ -907,7 +896,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print("Iteracja: " + str(counter))
                 counter += 1
                 # dlibFaceDetector(image, cpathGood, cpathGoodBad)
-                getFace(image, values[0], values[1], cpathGood, cpathGoodBad)
+                # getFace(image, values[0], values[1], cpathGood, cpathGoodBad)
 
                 if printDetails:
                     printDetails = False
@@ -923,7 +912,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print("Iteracja: " + str(counter))
                 counter += 1
                 # dlibFaceDetector(image, cpathBadBad, cpathBad)
-                getFace(image, values[0], values[1], cpathBadBad, cpathBad)
+                # getFace(image, values[0], values[1], cpathBadBad, cpathBad)
 
                 if printDetails:
                     printDetails = False
@@ -934,7 +923,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
             badResult = 0
             ######################################################################################
             file.writelines("\n\npitch\t" + "\troll\t" "\tyaw\t" + "filename\n")
-            for i in range(1, 11, 1):
+            for i in range(11, 12, 1):
 
                 lister_good = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Dobre/*")
                 # lister_moderate = glob.glob("ProbkiBadawcze/Osoba" + str(i) + "/Srednie/*")
