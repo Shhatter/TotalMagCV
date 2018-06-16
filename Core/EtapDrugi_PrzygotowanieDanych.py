@@ -31,7 +31,7 @@ from skimage import exposure
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from mtcnn_facematch import detect_face
-
+from skimage.transform import rotate
 from PIL import Image
 
 from skimage import exposure
@@ -57,6 +57,11 @@ from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import BallTree
+from imutils.face_utils.helpers import FACIAL_LANDMARKS_IDXS
+from imutils.face_utils.helpers import shape_to_np
+import numpy as np
+import cv2
+from skimage import img_as_ubyte
 
 ###STAŁE
 predictor_path = "landmark/shape_predictor_68_face_landmarks.dat"
@@ -139,11 +144,11 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
     #
     # ( Width [0], Height [1]
     # inputFile = imutils.resize(inputFile, 500)
-    grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
+    greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
     height, width = inputFile.shape[:2]
     print("width: " + str(width) + " height: " + str(height) + "\n")
 
-    rects = detector(grayImage, 1)
+    rects = detector(greyImage, 1)
     x = 0
     y = 0
     w = 0
@@ -158,7 +163,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
             # determine the facial landmarks for the face region, then
             # convert the facial landmark (x, y)-coordinates to a NumPy
             # array
-            shape = predictor(grayImage, rect)
+            shape = predictor(greyImage, rect)
             # nomnom = predictor.full_object_detection(shape)
             shape = face_utils.shape_to_np(shape)
 
@@ -194,7 +199,7 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         smart_h = int(h * chinHeightROI)
         roi_color = inputFile[y:y + h, x:x + w]
 
-        roi_gray = grayImage[y:y + height, x:x + w]
+        roi_gray = greyImage[y:y + height, x:x + w]
         index = 0
 
         fp0 = [shape[0][0], shape[0][1]]
@@ -286,15 +291,15 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
         lSideLength = math.sqrt(math.pow(fp48[0] - fp4[0], 2) + (math.pow(fp48[1] - fp4[1], 2)))
         rSideLength = math.sqrt(math.pow(fp54[0] - fp12[0], 2) + (math.pow(fp54[1] - fp12[1], 2)))
         if (((lSideLength * 0.666) > rSideLength) or ((rSideLength * 0.666) > lSideLength)):
-            grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
+            greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
             # for (x, y) in shape:
-            #     cv2.circle(grayImage, (x, y), 1, (0, 0, 255), 5)
+            #     cv2.circle(greyImage, (x, y), 1, (0, 0, 255), 5)
 
-            # cv2.circle(grayImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
-            # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, grayImage)
+            # cv2.circle(greyImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
+            # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, greyImage)
         else:
-            grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
-            faceAligned = fa.align(inputFile, grayImage, rect)
+            greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
+            faceAligned = fa.align(inputFile, greyImage, rect)
             grayImageAligned = cv2.cvtColor(faceAligned, cv2.COLOR_BGR2GRAY)
             # cv2.imshow("Original", grayImageAligned)
 
@@ -386,39 +391,25 @@ def dlibFaceDetector(inputFilePath, goodPath, badPath):
             # cv2.waitKey(0)
 
 
-def getFace(inputFilePath, threshold, factor, goodPath, badPath):
-    global goodResult, badResult
-    inputFile = cv2.imread(inputFilePath)
-    height, width = inputFile.shape[:2]
-    if (width < 600 or height < 600):
-        inputFile = imutils.resize(inputFile, 600)
-        height, width = inputFile.shape[:2]
-    # elif (width > 2000 or height > 2000):
-    #     inputFile = imutils.resize(inputFile, 1500)
-    #     height, width = inputFile.shape[:2]
-    # else:
-    #     inputFile = imutils.resize(inputFile, width=1100)
-
-    faces = []
-    height, width = inputFile.shape[:2]
-    bounding_boxes, _ = detect_face.detect_face(inputFile, int(width * 0.2), pnet, rnet, onet, threshold, factor)
+def checkROIOfImage(bounding_boxes, inputFile, width, height, markData):
     rect = None
     x = None
     y = None
     hPoint = None
     wPoint = None
     if (len(bounding_boxes) == 0):
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         # cv2.imshow("image", inputFile)
         # cv2.waitKey(0)
-        badResult += 1
+        # badResult += 1
         # cv2.imshow("odrzucony na rozpoznaniu",inputFile)
         # cv2.waitKey(0)
+        return False, rect, x, y, hPoint, wPoint, inputFile
 
     elif (len(bounding_boxes) == 1):
 
         if (bounding_boxes[0][4] > 0.95):
-            print("highest: " + str(bounding_boxes[0][4]))
+            # print("highest: " + str(bounding_boxes[0][4]))
 
             x, y, wPoint, hPoint = int(bounding_boxes[0][0]), int(bounding_boxes[0][1]), int(bounding_boxes[0][2]), int(
                 bounding_boxes[0][3])
@@ -443,15 +434,18 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
             elif hPoint > height:
                 hPoint = height - 1
 
-            cv2.rectangle(inputFile, (x, y),
-                          (wPoint, hPoint), (0, 255, 0), 2)
-            goodResult += 1
+            if (markData):
+                cv2.rectangle(inputFile, (x, y),
+                              (wPoint, hPoint), (0, 255, 0), 2)
+            # goodResult += 1
             # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
             rect = dlib.rectangle(x, y, wPoint, hPoint)
+            return True, rect, x, y, hPoint, wPoint, inputFile
 
         else:
-            cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
-            badResult += 1
+            # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+            return False, rect, x, y, hPoint, wPoint, inputFile
+
             # cv2.imshow("odrzucony na rozpoznaniu",inputFile)
             # cv2.waitKey(0)
 
@@ -493,328 +487,500 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
                 hPoint = height - 1
 
             rect = dlib.rectangle(x, y, wPoint, hPoint)
-
-            cv2.rectangle(inputFile, (x, y),
-                          (wPoint, hPoint), (0, 255, 0), 2)
-            goodResult += 1
-
+            if (markData):
+                cv2.rectangle(inputFile, (x, y),
+                              (wPoint, hPoint), (0, 255, 0), 2)
+            # goodResult += 1
+            return True, rect, x, y, hPoint, wPoint, inputFile
             # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
     else:
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # badResult += 1
+        return False, rect, x, y, hPoint, wPoint, inputFile
+
+
+def alignRect(x, y, w, h, width, height):
+    if x < 0:
+        x = 0
+    elif x > width:
+        x = width - 1
+
+    if (y < 0):
+        y = 0
+    elif y > height:
+        y = height - 1
+
+    if w < 0:
+        w = 0
+    elif w > width:
+        w = width - 1
+
+    if (h < 0):
+        h = 0
+    elif h > height:
+        h = height - 1
+    return x, y, w, h
+
+
+def alignMyFace(image, gray, rect, desiredLeftEye, desiredFaceHeight, desiredFaceWidth, shape):
+    # extract the left and right eye (x, y)-coordinates
+    (lStart, lEnd) = FACIAL_LANDMARKS_IDXS["left_eye"]
+    (rStart, rEnd) = FACIAL_LANDMARKS_IDXS["right_eye"]
+    leftEyePts = shape[lStart:lEnd]
+    rightEyePts = shape[rStart:rEnd]
+
+    # compute the center of mass for each eye
+    leftEyeCenter = leftEyePts.mean(axis=0).astype("int")
+    rightEyeCenter = rightEyePts.mean(axis=0).astype("int")
+
+    # compute the angle between the eye centroids
+    dY = rightEyeCenter[1] - leftEyeCenter[1]
+    dX = rightEyeCenter[0] - leftEyeCenter[0]
+
+    angle = np.degrees(np.arctan2(dY, dX)) - 180
+    eyesCenter = ((leftEyeCenter[0] + rightEyeCenter[0]) // 2,
+                  (leftEyeCenter[1] + rightEyeCenter[1]) // 2)
+
+    simage = rotate(image, angle, resize=False, center=eyesCenter, order=1, mode='wrap', cval=0, clip=True,
+                    preserve_range=False)
+    cv_image = img_as_ubyte(simage)  # reflect symmetric
+    return cv_image
+    # convert the landmark (x, y)-coordinates to a NumPy array
+    # shape = predictor(gray, rect)
+    # shape = shape_to_np(shape)
+
+
+'''
+    # compute the desired right eye x-coordinate based on the
+    # desired x-coordinate of the left eye
+    desiredRightEyeX = 1.0 - desiredLeftEye[0]
+
+    # determine the scale of the new resulting image by taking
+    # the ratio of the distance between eyes in the *current*
+    # image to the ratio of distance between eyes in the
+    # *desired* image
+    dist = np.sqrt((dX ** 2) + (dY ** 2))
+    desiredDist = (desiredRightEyeX - desiredLeftEye[0])
+    desiredDist *= desiredFaceWidth
+    scale = desiredDist / dist
+
+    # compute center (x, y)-coordinates (i.e., the median point)
+    # between the two eyes in the input image
+    eyesCenter = ((leftEyeCenter[0] + rightEyeCenter[0]) // 2,
+                  (leftEyeCenter[1] + rightEyeCenter[1]) // 2)
+
+    # grab the rotation matrix for rotating and scaling the face
+    M = cv2.getRotationMatrix2D(eyesCenter, angle, scale)
+
+    # update the translation component of the matrix
+    tX = desiredFaceWidth * 0.5
+    tY = desiredFaceHeight * desiredLeftEye[1]
+    M[0, 2] += (tX - eyesCenter[0])
+    M[1, 2] += (tY - eyesCenter[1])
+
+    # apply the affine transformation
+    (w, h) = (desiredFaceWidth, desiredFaceHeight)
+    output = cv2.warpAffine(image, M, (w, h),
+                            flags=cv2.INTER_LINEAR)
+
+    # return the aligned face
+
+    return output
+'''
+
+
+def getFace(inputFilePath, threshold, factor, goodPath, badPath):
+    global goodResult, badResult
+    inputFile = cv2.imread(inputFilePath)
+    # height, width = inputFile.shape[:2]
+    # if (width < 600 or height < 600):
+    #     inputFile = imutils.resize(inputFile, 800)
+    # height, width = inputFile.shape[:2]
+    # elif (width > 2000 or height > 2000):
+    #     inputFile = imutils.resize(inputFile, 1500)
+    #     height, width = inputFile.shape[:2]
+    # else:
+    #     inputFile = imutils.resize(inputFile, width=1100)
+
+    height, width = inputFile.shape[:2]
+    bounding_boxes, _ = detect_face.detect_face(inputFile, int(width * 0.2), pnet, rnet, onet, threshold, factor)
+
+    isGood, rect, x, y, hPoint, wPoint, inputFile = checkROIOfImage(bounding_boxes, inputFile, width, height, False)
+    if ((isGood == False) or (rect == None)):
         cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
+        return None
 
-        # cv2.imshow("odrzucony na rozpoznaniu",inputFile)
-        # cv2.waitKey(0)
+    greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
+    shape = predictor(greyImage, rect)
+    shape = face_utils.shape_to_np(shape)
 
-    if not rect == None:
+    # for (xx, yy) in shape:
+    #     cv2.circle(inputFile, (xx, yy), 1, (0, 0, 255), 5)
+    # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+    # cv2.imshow("test", inputFile)
+    # cv2.waitKey(0)
 
-        grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
-        shape = predictor(grayImage, rect)
-        shape = face_utils.shape_to_np(shape)
+    ################ Przycinanie pierwszy raz###########################################
+    xn = x - int((wPoint - x) * 0.4)
+    yn = y - int((hPoint - y) * 0.4)
+    wn = int((wPoint - x) * 1.8)
+    hn = int((hPoint - y) * 1.8)
 
+    xn, yn, wn, hn = alignRect(xn, yn, wn, hn, width, height)
+    inputFile = inputFile[yn:yn + hn, xn:xn + wn]
+
+    # cv2.imshow("cut image ", inputFile)
+    # cv2.waitKey(0)
+    height, width = inputFile.shape[:2]
+    bounding_boxes, _ = detect_face.detect_face(inputFile, int(width * 0.2), pnet, rnet, onet, threshold, factor)
+
+    isGood, rect, x, y, hPoint, wPoint, inputFile = checkROIOfImage(bounding_boxes, inputFile, width, height, False)
+    greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
+
+    faceAligned = alignMyFace(inputFile, greyImage, rect, (0.38, 0.38), height, width, shape)
+    # inputFile = alignMyFace(inputFile, greyImage, rect, width, height
+    # cv2.imshow("after align ", faceAligned)
+    # cv2.waitKey(0)
+    height, width = faceAligned.shape[:2]
+    bounding_boxes, _ = detect_face.detect_face(faceAligned, int(width * 0.2), pnet, rnet, onet, threshold, factor)
+
+    isGood, rect, x, y, hPoint, wPoint, faceAligned = checkROIOfImage(bounding_boxes, faceAligned, width, height, True)
+    if ((isGood == False) or (rect == None)):
+        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        badResult += 1
+        return None
+
+    # cv2.imshow("aliged image again ", faceAligned)
+    # cv2.waitKey(0)
+    #####################################################################################
+    ################ Przycinanie drugi raz###########################################
+    # faceAligned
+    xn = x - int((wPoint - x) * 0.2)
+    yn = y - int((hPoint - y) * 0.2)
+    wn = int((wPoint - x) * 1.4)
+    hn = int((hPoint - y) * 1.4)
+    xn, yn, wn, hn = alignRect(xn, yn, wn, hn, width, height)
+    faceAlignedAndCropped = inputFile[yn:yn + hn, xn:xn + wn]
+    bounding_boxes, _ = detect_face.detect_face(faceAlignedAndCropped, int(width * 0.2), pnet, rnet, onet, threshold,
+                                                factor)
+    isGood, rect, x, y, hPoint, wPoint, faceAlignedAndCropped = checkROIOfImage(bounding_boxes, faceAlignedAndCropped,
+                                                                                width, height, False)
+    if ((isGood == False) or (rect == None)):
+        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        badResult += 1
+        return None
+    greyImage = cv2.cvtColor(faceAlignedAndCropped, cv2.COLOR_BGR2GRAY)
+
+    shape = predictor(greyImage, rect)
+    # shape = face_utils.shape_to_np(shape)
+
+    # for (xx, yy) in shape:
+    #     cv2.circle(faceAlignedAndCropped, (xx, yy), 1, (0, 0, 255), 5)
+    # cv2.imshow("aliged and cropped face ", faceAlignedAndCropped)
+    # cv2.waitKey(0)
+    ################ normalizowanie do pożądanej wartości ###########################################
+
+    faceResidedAlignedCropped = imutils.resize(faceAlignedAndCropped, width=1100)
+    height, width = faceResidedAlignedCropped.shape[:2]
+    bounding_boxes, _ = detect_face.detect_face(faceResidedAlignedCropped, int(width * 0.2),
+                                                pnet, rnet, onet, threshold, factor)
+    isGood, rect, x, y, hPoint, wPoint, faceResidedAlignedCropped = checkROIOfImage(bounding_boxes,
+                                                                                    faceResidedAlignedCropped,
+                                                                                    width, height, True)
+    greyImage = cv2.cvtColor(faceResidedAlignedCropped, cv2.COLOR_BGR2GRAY)
+
+    if ((isGood == False) or (rect == None)):
+        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        badResult += 1
+        return None
+
+    shape = predictor(greyImage, rect)
+    shape = face_utils.shape_to_np(shape)
+
+    # for (xx, yy) in shape:
+    #     cv2.circle(faceResidedAlignedCropped, (xx, yy), 1, (0, 0, 255), 5)
+
+    # cv2.imshow("aligned cropped resized ", faceResidedAlignedCropped)
+    # cv2.waitKey(0)
+    #####################################################################################
+
+    fp0 = [shape[0][0], shape[0][1]]
+    fp1 = [shape[1][0], shape[1][1]]
+    fp2 = [shape[2][0], shape[2][1]]
+    fp3 = [shape[3][0], shape[3][1]]
+    fp4 = [shape[4][0], shape[4][1]]
+    fp5 = [shape[5][0], shape[5][1]]
+    fp6 = [shape[6][0], shape[6][1]]
+    fp7 = [shape[7][0], shape[7][1]]
+    fp8 = [shape[8][0], shape[8][1]]
+    fp9 = [shape[9][0], shape[9][1]]
+    fp10 = [shape[10][0], shape[10][1]]
+    fp11 = [shape[11][0], shape[11][1]]
+    fp12 = [shape[12][0], shape[12][1]]
+    fp13 = [shape[13][0], shape[13][1]]
+    fp14 = [shape[14][0], shape[14][1]]
+    fp15 = [shape[15][0], shape[15][1]]
+    fp16 = [shape[16][0], shape[16][1]]
+    fp17 = [shape[17][0], shape[17][1]]
+    fp18 = [shape[18][0], shape[18][1]]
+    fp19 = [shape[19][0], shape[19][1]]
+    fp20 = [shape[20][0], shape[20][1]]
+    fp21 = [shape[21][0], shape[21][1]]
+    fp22 = [shape[22][0], shape[22][1]]
+    fp23 = [shape[23][0], shape[23][1]]
+    fp24 = [shape[24][0], shape[24][1]]
+    fp25 = [shape[25][0], shape[25][1]]
+    fp26 = [shape[26][0], shape[26][1]]
+    fp27 = [shape[27][0], shape[27][1]]
+    fp28 = [shape[28][0], shape[28][1]]
+    fp29 = [shape[29][0], shape[29][1]]  # ponad czubkiemn nosa
+    fp30 = [shape[30][0], shape[30][1]]  # czubek nosa
+    fp31 = [shape[31][0], shape[31][1]]
+    fp32 = [shape[32][0], shape[32][1]]
+    fp33 = [shape[33][0], shape[33][1]]
+    fp34 = [shape[34][0], shape[34][1]]
+    fp35 = [shape[35][0], shape[35][1]]
+    fp36 = [shape[36][0], shape[36][1]]  # lewy zewnętrzny kącik oka
+    fp37 = [shape[37][0], shape[37][1]]
+    fp38 = [shape[38][0], shape[38][1]]
+    fp39 = [shape[39][0], shape[39][1]]  # lewy wewnetrzny kącik oka
+    fp40 = [shape[40][0], shape[40][1]]  # dolna zrenica wewnetrzna
+    fp41 = [shape[41][0], shape[41][1]]  # dolna zrenica zewnetrzna
+    fp42 = [shape[42][0], shape[42][1]]  # prawy wewnetrzny kacik oka
+    fp43 = [shape[43][0], shape[43][1]]
+    fp44 = [shape[44][0], shape[44][1]]
+    fp45 = [shape[45][0], shape[45][1]]  # prawy zewnetrzny kacik oka
+    fp46 = [shape[46][0], shape[46][1]]  # zewnetrzna prawwa zrenica
+    fp47 = [shape[47][0], shape[47][1]]  # wewnetrzna prawa zrenica
+    fp48 = [shape[48][0], shape[48][1]]  # lewy kącik ust
+    fp49 = [shape[49][0], shape[49][1]]  # lewa warga zewnątrz
+    fp50 = [shape[50][0], shape[50][1]]
+    fp51 = [shape[51][0], shape[51][1]]  # środek górnej wargi
+    fp52 = [shape[52][0], shape[52][1]]
+    fp53 = [shape[53][0], shape[53][1]]  # prawa warga zewnątrz góra
+    fp54 = [shape[54][0], shape[54][1]]  # prawy kącik ust
+    fp55 = [shape[55][0], shape[55][1]]  # prawa warga zewnątrz dół
+    fp56 = [shape[56][0], shape[56][1]]  # środek dolnej wargi
+    fp57 = [shape[57][0], shape[57][1]]
+    fp58 = [shape[58][0], shape[58][1]]
+    fp59 = [shape[59][0], shape[59][1]]  # lewa warga dół
+    fp60 = [shape[60][0], shape[60][1]]
+    fp61 = [shape[61][0], shape[61][1]]
+    fp62 = [shape[62][0], shape[62][1]]
+    fp63 = [shape[63][0], shape[63][1]]
+    fp64 = [shape[64][0], shape[64][1]]
+    fp65 = [shape[65][0], shape[65][1]]
+    fp66 = [shape[66][0], shape[66][1]]
+    fp67 = [shape[67][0], shape[67][1]]
+
+    # fa = FaceAligner(predictor, desiredFaceWidth=int(width * 1.5), desiredFaceHeight=int(height * 1.5),
+    #                  desiredLeftEye=(0.40, 0.40))  # 36
+
+    sizeMouthFactor = 0.4
+    sizeEyeFactor = 0.4  # 0.5
+    # xCenter = (int)((w / 2) + x)
+    # yCenter = (int)((h / 2) + y)
+    lSideNoseLength = math.sqrt(math.pow(fp48[0] - fp30[0], 2) + (math.pow(fp48[1] - fp30[1], 2)))
+    rSideNoseLength = math.sqrt(math.pow(fp54[0] - fp30[0], 2) + (math.pow(fp54[1] - fp30[1], 2)))
+
+    lSideEyeLength = math.sqrt(math.pow(fp36[0] - fp0[0], 2) + (math.pow(fp36[1] - fp0[1], 2)))
+    rSideEyeLength = math.sqrt(math.pow(fp45[0] - fp16[0], 2) + (math.pow(fp45[1] - fp16[1], 2)))
+    if ((lSideNoseLength * sizeMouthFactor) > rSideNoseLength) or (
+            (rSideNoseLength * sizeMouthFactor) > lSideNoseLength) or (
+            (lSideEyeLength * sizeEyeFactor) > rSideEyeLength) or (
+            (
+                    rSideEyeLength * sizeEyeFactor) > lSideEyeLength):  # todo : dodać korektę na zmianę odległości kącików ust na coś innego
+        # greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
         for (x, y) in shape:
-            cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
-        # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
-        # cv2.imshow("test",inputFile)
+            cv2.circle(faceResidedAlignedCropped, (x, y), 1, (0, 0, 255), 5)
+        # cv2.imshow("test", inputFile)
+        # cv2.waitKey(0)
+        # cv2.circle(greyImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
+        # cv2.imshow("odrzucony na odchyleniach",inputFile)
+        # cv2.waitKey(0)
+        badResult += 1
+        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, faceResidedAlignedCropped)
+        return None
+    else:
+        # greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
+        # # faceAligned = fa.align(inputFile, greyImage, rect)
+        # # cv2.imshow("Original", faceAligned)
+        # # cv2.waitKey(0)
+        #
+        # ################# poprawka
+        # bounding_boxes, _ = detect_face.detect_face(faceAligned, int(width * 0.2), pnet, rnet, onet, threshold,
+        #                                             factor)
+        # rect = None
+        # x = None
+        # y = None
+        # hPoint = None
+        # wPoint = None
+        # if (len(bounding_boxes) == 0):
+        #     cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        #     # cv2.imshow("image", inputFile)
+        #     # cv2.waitKey(0)
+        #     badResult += 1
+        #
+        # elif (len(bounding_boxes) == 1):
+        #
+        #     if (bounding_boxes[0][4] > 0.95):
+        #         print("highest: " + str(bounding_boxes[0][4]))
+        #
+        #         x, y, wPoint, hPoint = int(bounding_boxes[0][0]), int(bounding_boxes[0][1]), int(
+        #             bounding_boxes[0][2]), int(
+        #             bounding_boxes[0][3])
+        #
+        #         if x < 0:
+        #             x = 0
+        #         elif x > width:
+        #             x = width - 1
+        #
+        #         if (y < 0):
+        #             y = 0
+        #         elif y > height:
+        #             y = height - 1
+        #
+        #         if wPoint < 0:
+        #             wPoint = 0
+        #         elif wPoint > width:
+        #             wPoint = width - 1
+        #
+        #         if (hPoint < 0):
+        #             hPoint = 0
+        #         elif hPoint > height:
+        #             hPoint = height - 1
+        #
+        #         cv2.rectangle(faceAligned, (x, y),
+        #                       (wPoint, hPoint), (0, 255, 0), 2)
+        #         goodResult += 1
+        #         # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+        #         rect = dlib.rectangle(x, y, wPoint, hPoint)
+        #
+        #
+        # elif (len(bounding_boxes) != 1):
+        #
+        #     highest = bounding_boxes[0]
+        #     for i in range(1, len(bounding_boxes), 1):
+        #         print("highest: " + str(highest[0]))
+        #
+        #         if (bounding_boxes[i][4] > highest[4]):
+        #             highest = bounding_boxes[i]
+        #
+        #     print("highest: " + str(highest[0]))
+        #
+        #     if (highest[4] > 0.95):
+        #         for a in range(0, 4, 1):
+        #             highest[a] = int(highest[a])
+        #
+        #         x, y, wPoint, hPoint = int(highest[0]), int(highest[1]), int(highest[2]), int(highest[3])
+        #
+        #         if x < 0:
+        #             x = 0
+        #         elif x > width:
+        #             x = width - 1
+        #
+        #         if (y < 0):
+        #             y = 0
+        #         elif y > height:
+        #             y = height - 1
+        #
+        #         if wPoint < 0:
+        #             wPoint = 0
+        #         elif wPoint > width:
+        #             wPoint = width - 1
+        #
+        #         if (hPoint < 0):
+        #             hPoint = 0
+        #         elif hPoint > height:
+        #             hPoint = height - 1
+        #
+        #         rect = dlib.rectangle(x, y, wPoint, hPoint)
+        #
+        #         cv2.rectangle(faceAligned, (x, y),
+        #                       (wPoint, hPoint), (0, 255, 0), 2)
+        #         goodResult += 1
+        #
+        #         # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
+        # else:
+        #     cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        #     badResult += 1
+        #
+        # if not rect == None:
+        #     print("nope")
+        #
+        #     grayImageAligned = cv2.cvtColor(faceAligned, cv2.COLOR_BGR2GRAY)
+        #     shape = predictor(grayImageAligned, rect)
+        #     shape = face_utils.shape_to_np(shape)
+        #     for (xx, yy) in shape:
+        #         # xp1 = shape[0,0]
+        #         cv2.circle(faceAligned, (xx, yy), 2, (0, 0, 255), 5)
+
+        # cv2.imshow("analysed",faceAligned)
         # cv2.waitKey(0)
 
-        fp0 = [shape[0][0], shape[0][1]]
-        fp1 = [shape[1][0], shape[1][1]]
-        fp2 = [shape[2][0], shape[2][1]]
-        fp3 = [shape[3][0], shape[3][1]]
         fp4 = [shape[4][0], shape[4][1]]
-        fp5 = [shape[5][0], shape[5][1]]
-        fp6 = [shape[6][0], shape[6][1]]
-        fp7 = [shape[7][0], shape[7][1]]
-        fp8 = [shape[8][0], shape[8][1]]
-        fp9 = [shape[9][0], shape[9][1]]
-        fp10 = [shape[10][0], shape[10][1]]
-        fp11 = [shape[11][0], shape[11][1]]
         fp12 = [shape[12][0], shape[12][1]]
-        fp13 = [shape[13][0], shape[13][1]]
-        fp14 = [shape[14][0], shape[14][1]]
-        fp15 = [shape[15][0], shape[15][1]]
-        fp16 = [shape[16][0], shape[16][1]]
-        fp17 = [shape[17][0], shape[17][1]]
-        fp18 = [shape[18][0], shape[18][1]]
-        fp19 = [shape[19][0], shape[19][1]]
-        fp20 = [shape[20][0], shape[20][1]]
-        fp21 = [shape[21][0], shape[21][1]]
-        fp22 = [shape[22][0], shape[22][1]]
-        fp23 = [shape[23][0], shape[23][1]]
-        fp24 = [shape[24][0], shape[24][1]]
-        fp25 = [shape[25][0], shape[25][1]]
-        fp26 = [shape[26][0], shape[26][1]]
-        fp27 = [shape[27][0], shape[27][1]]
-        fp28 = [shape[28][0], shape[28][1]]
-        fp29 = [shape[29][0], shape[29][1]]  # ponad czubkiemn nosa
-        fp30 = [shape[30][0], shape[30][1]]  # czubek nosa
-        fp31 = [shape[31][0], shape[31][1]]
-        fp32 = [shape[32][0], shape[32][1]]
-        fp33 = [shape[33][0], shape[33][1]]
-        fp34 = [shape[34][0], shape[34][1]]
-        fp35 = [shape[35][0], shape[35][1]]
+        totalFaceWidth = math.sqrt(math.pow(fp12[0] - fp4[0], 2) + (math.pow(fp12[1] - fp4[1],
+                                                                             2)))  # TODO : dodać bądź zmienić warunek z szerokości twarzy na szerokość oczu
+        rectWidth = (math.sqrt(math.pow(x - wPoint, 2) + (math.pow(y - y, 2))))
+        rectHeight = (math.sqrt(math.pow(y - hPoint, 2) + (math.pow(x - x, 2))))
+        halfFaceRectWidth = 0.5 * rectWidth
+
+        # KWADRATY KONTROLNE !!!
+        xCenter = (int)((rectWidth / 2) + x)
+        yCenter = (int)((rectHeight / 2) + y)
+        cv2.circle(faceResidedAlignedCropped, (xCenter, yCenter), 1, (200, 255, 23), 5)
+
+        # r1X,r1Y,r1W,r1H
+        r1X = x
+        r1Y = y
+        r1W = int(0.29 * rectWidth)
+        r1H = yCenter
+        cv2.rectangle(faceResidedAlignedCropped, (r1X, r1Y),
+                      (x + r1W, r1H), (255, 255, 0), 2)
+
+        r2X = wPoint - int(0.29 * rectWidth)
+        r2Y = y
+        r2W = int(0.29 * rectWidth)
+        r2H = yCenter
+        # cv2.imshow("aaaa",faceAligned)
+        # cv2.waitKey(0)
+        cv2.rectangle(faceResidedAlignedCropped, (r2X, r2Y),
+                      (wPoint, r2H), (0, 255, 200), 2)
+
         fp36 = [shape[36][0], shape[36][1]]  # lewy zewnętrzny kącik oka
-        fp37 = [shape[37][0], shape[37][1]]
-        fp38 = [shape[38][0], shape[38][1]]
-        fp39 = [shape[39][0], shape[39][1]]  # lewy wewnetrzny kącik oka
-        fp40 = [shape[40][0], shape[40][1]]  # dolna zrenica wewnetrzna
-        fp41 = [shape[41][0], shape[41][1]]  # dolna zrenica zewnetrzna
-        fp42 = [shape[42][0], shape[42][1]]  # prawy wewnetrzny kacik oka
-        fp43 = [shape[43][0], shape[43][1]]
-        fp44 = [shape[44][0], shape[44][1]]
         fp45 = [shape[45][0], shape[45][1]]  # prawy zewnetrzny kacik oka
-        fp46 = [shape[46][0], shape[46][1]]  # zewnetrzna prawwa zrenica
-        fp47 = [shape[47][0], shape[47][1]]  # wewnetrzna prawa zrenica
-        fp48 = [shape[48][0], shape[48][1]]  # lewy kącik ust
-        fp49 = [shape[49][0], shape[49][1]]  # lewa warga zewnątrz
-        fp50 = [shape[50][0], shape[50][1]]
-        fp51 = [shape[51][0], shape[51][1]]  # środek górnej wargi
-        fp52 = [shape[52][0], shape[52][1]]
-        fp53 = [shape[53][0], shape[53][1]]  # prawa warga zewnątrz góra
-        fp54 = [shape[54][0], shape[54][1]]  # prawy kącik ust
-        fp55 = [shape[55][0], shape[55][1]]  # prawa warga zewnątrz dół
-        fp56 = [shape[56][0], shape[56][1]]  # środek dolnej wargi
-        fp57 = [shape[57][0], shape[57][1]]
-        fp58 = [shape[58][0], shape[58][1]]
-        fp59 = [shape[59][0], shape[59][1]]  # lewa warga dół
-        fp60 = [shape[60][0], shape[60][1]]
-        fp61 = [shape[61][0], shape[61][1]]
-        fp62 = [shape[62][0], shape[62][1]]
-        fp63 = [shape[63][0], shape[63][1]]
-        fp64 = [shape[64][0], shape[64][1]]
-        fp65 = [shape[65][0], shape[65][1]]
-        fp66 = [shape[66][0], shape[66][1]]
-        fp67 = [shape[67][0], shape[67][1]]
 
-        fa = FaceAligner(predictor, desiredFaceWidth=int(width * 1.5), desiredFaceHeight=int(height * 1.5),
-                         desiredLeftEye=(0.40, 0.40))  # 36
-
-        sizeMouthFactor = 0.5
-        sizeEyeFactor = 0.5  # 0.5
-        # xCenter = (int)((w / 2) + x)
-        # yCenter = (int)((h / 2) + y)
-        lSideMouthLength = math.sqrt(math.pow(fp48[0] - fp4[0], 2) + (math.pow(fp48[1] - fp4[1], 2)))
-        rSideMounthLength = math.sqrt(math.pow(fp54[0] - fp12[0], 2) + (math.pow(fp54[1] - fp12[1], 2)))
-
-        lSideEyeLength = math.sqrt(math.pow(fp36[0] - fp0[0], 2) + (math.pow(fp36[1] - fp0[1], 2)))
-        rSideEyeLength = math.sqrt(math.pow(fp45[0] - fp16[0], 2) + (math.pow(fp45[1] - fp16[1], 2)))
-        if ((lSideMouthLength * sizeMouthFactor) > rSideMounthLength) or (
-                (rSideMounthLength * sizeMouthFactor) > lSideMouthLength) or (
-                (lSideEyeLength * sizeEyeFactor) > rSideEyeLength) or (
-                (
-                        rSideEyeLength * sizeEyeFactor) > lSideEyeLength):  # todo : dodać korektę na zmianę odległości kącików ust na coś innego
-            # grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
-            # for (x, y) in shape:
-            #     cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
-            # cv2.imshow("test", inputFile)
-            # cv2.waitKey(0)
-            # cv2.circle(grayImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
-            # cv2.imshow("odrzucony na odchyleniach",inputFile)
-            # cv2.waitKey(0)
-            cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        if ((fp36[0] > (x + r1W)) or (fp36[0] < x) or (fp36[1] > yCenter) or (fp36[1] < y)):
+            lsideFailure = True
         else:
-            grayImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
-            faceAligned = fa.align(inputFile, grayImage, rect)
-            # cv2.imshow("Original", faceAligned)
+            lsideFailure = False
+
+        if ((fp45[0] > (wPoint)) or (fp45[0] < r2X) or (fp45[1] > yCenter) or (fp45[1] < y)):
+            rsideFailure = True
+        else:
+            rsideFailure = False
+
+        if (totalFaceWidth > halfFaceRectWidth and lsideFailure == False and rsideFailure == False):
+            analysedData.append(DataStorage(inputFilePath, 0, inputFile, faceResidedAlignedCropped, shape, False))
+            print("analysedData passed !: " + str(analysedData.__len__()))
+            for (x, y) in shape:
+                cv2.circle(faceResidedAlignedCropped, (x, y), 1, (0, 0, 255), 5)
+            cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceResidedAlignedCropped)
+            goodResult += 1
+            return None
+
+        else:
+            # cv2.imshow("odrzucony na ostatniej walidacji",faceAligned)
             # cv2.waitKey(0)
-
-            ################# poprawka
-            bounding_boxes, _ = detect_face.detect_face(faceAligned, int(width * 0.2), pnet, rnet, onet, threshold,
-                                                        factor)
-            rect = None
-            x = None
-            y = None
-            hPoint = None
-            wPoint = None
-            if (len(bounding_boxes) == 0):
-                cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
-                # cv2.imshow("image", inputFile)
-                # cv2.waitKey(0)
-                badResult += 1
-
-            elif (len(bounding_boxes) == 1):
-
-                if (bounding_boxes[0][4] > 0.95):
-                    print("highest: " + str(bounding_boxes[0][4]))
-
-                    x, y, wPoint, hPoint = int(bounding_boxes[0][0]), int(bounding_boxes[0][1]), int(
-                        bounding_boxes[0][2]), int(
-                        bounding_boxes[0][3])
-
-                    if x < 0:
-                        x = 0
-                    elif x > width:
-                        x = width - 1
-
-                    if (y < 0):
-                        y = 0
-                    elif y > height:
-                        y = height - 1
-
-                    if wPoint < 0:
-                        wPoint = 0
-                    elif wPoint > width:
-                        wPoint = width - 1
-
-                    if (hPoint < 0):
-                        hPoint = 0
-                    elif hPoint > height:
-                        hPoint = height - 1
-
-                    cv2.rectangle(faceAligned, (x, y),
-                                  (wPoint, hPoint), (0, 255, 0), 2)
-                    goodResult += 1
-                    # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
-                    rect = dlib.rectangle(x, y, wPoint, hPoint)
-
-
-            elif (len(bounding_boxes) != 1):
-
-                highest = bounding_boxes[0]
-                for i in range(1, len(bounding_boxes), 1):
-                    print("highest: " + str(highest[0]))
-
-                    if (bounding_boxes[i][4] > highest[4]):
-                        highest = bounding_boxes[i]
-
-                print("highest: " + str(highest[0]))
-
-                if (highest[4] > 0.95):
-                    for a in range(0, 4, 1):
-                        highest[a] = int(highest[a])
-
-                    x, y, wPoint, hPoint = int(highest[0]), int(highest[1]), int(highest[2]), int(highest[3])
-
-                    if x < 0:
-                        x = 0
-                    elif x > width:
-                        x = width - 1
-
-                    if (y < 0):
-                        y = 0
-                    elif y > height:
-                        y = height - 1
-
-                    if wPoint < 0:
-                        wPoint = 0
-                    elif wPoint > width:
-                        wPoint = width - 1
-
-                    if (hPoint < 0):
-                        hPoint = 0
-                    elif hPoint > height:
-                        hPoint = height - 1
-
-                    rect = dlib.rectangle(x, y, wPoint, hPoint)
-
-                    cv2.rectangle(faceAligned, (x, y),
-                                  (wPoint, hPoint), (0, 255, 0), 2)
-                    goodResult += 1
-
-                    # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, inputFile)
-            else:
-                cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
-                badResult += 1
-
-            if not rect == None:
-                print("nope")
-
-                grayImageAligned = cv2.cvtColor(faceAligned, cv2.COLOR_BGR2GRAY)
-                shape = predictor(grayImageAligned, rect)
-                shape = face_utils.shape_to_np(shape)
-                for (xx, yy) in shape:
-                    # xp1 = shape[0,0]
-                    cv2.circle(faceAligned, (xx, yy), 2, (0, 0, 255), 5)
-
-                # cv2.imshow("analysed",faceAligned)
-                # cv2.waitKey(0)
-                fp4 = [shape[4][0], shape[4][1]]
-                fp12 = [shape[12][0], shape[12][1]]
-                totalFaceWidth = math.sqrt(math.pow(fp12[0] - fp4[0], 2) + (math.pow(fp12[1] - fp4[1],
-                                                                                     2)))  # TODO : dodać bądź zmienić warunek z szerokości twarzy na szerokość oczu
-                rectWidth = (math.sqrt(math.pow(x - wPoint, 2) + (math.pow(y - y, 2))))
-                rectHeight = (math.sqrt(math.pow(y - hPoint, 2) + (math.pow(x - x, 2))))
-                halfFaceRectWidth = 0.5 * rectWidth
-
-                # KWADRATY KONTROLNE !!!
-                xCenter = (int)((rectWidth / 2) + x)
-                yCenter = (int)((rectHeight / 2) + y)
-                cv2.circle(faceAligned, (xCenter, yCenter), 1, (200, 255, 23), 5)
-
-                # r1X,r1Y,r1W,r1H
-                r1X = x
-                r1Y = y
-                r1W = int(0.29 * rectWidth)
-                r1H = yCenter
-                cv2.rectangle(faceAligned, (r1X, r1Y),
-                              (x + r1W, r1H), (255, 255, 0), 2)
-
-                r2X = wPoint - int(0.29 * rectWidth)
-                r2Y = y
-                r2W = int(0.29 * rectWidth)
-                r2H = yCenter
-                # cv2.imshow("aaaa",faceAligned)
-                # cv2.waitKey(0)
-                cv2.rectangle(faceAligned, (r2X, r2Y),
-                              (wPoint, r2H), (0, 255, 200), 2)
-
-                fp36 = [shape[36][0], shape[36][1]]  # lewy zewnętrzny kącik oka
-                fp45 = [shape[45][0], shape[45][1]]  # prawy zewnetrzny kacik oka
-
-                if ((fp36[0] > (x + r1W)) or (fp36[0] < x) or (fp36[1] > yCenter) or (fp36[1] < y)):
-                    lsideFailure = True
-                else:
-                    lsideFailure = False
-
-                if ((fp45[0] > (wPoint)) or (fp45[0] < r2X) or (fp45[1] > yCenter) or (fp45[1] < y)):
-                    rsideFailure = True
-                else:
-                    rsideFailure = False
-
-                if (totalFaceWidth > halfFaceRectWidth and lsideFailure == False and rsideFailure == False):
-                    analysedData.append(DataStorage(inputFilePath, 0, inputFile, faceAligned, shape, False))
-                    print("analysedData: " + str(analysedData.__len__()))
-                    cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceAligned)
-
-                else:
-                    # cv2.imshow("odrzucony na ostatniej walidacji",faceAligned)
-                    # cv2.waitKey(0)
-                    cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, faceAligned)
-                    # cv2.imshow("Aligned", faceAligned)
-                    # cv2.waitKey(0)
-            else:
-                cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
-                badResult += 1
-    else:
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
-        badResult += 1
-
-
-# def researchOrderer(alghoritmName, mode, values, listergood):
-#     global printDetails
-#     global goodResult, badResult
-#     lister_good = glob.glob(listergood)
-#
-#     global positiveLister
-#     global getXTime
-#     getTimeFolderPersons = datetime.datetime.now()
-#     getXTime = str(getTimeFolderPersons.strftime("%Y-%m-%d - %H-%M-%S"))
-#     if (alghoritmName == "MTCNN"):
-#
-#         if (mode == "HEALTHY"):
-#             counter = 0
-#             for image in lister_good:
-#                 print(image)
-#                 print("Iteracja: " + str(counter))
-#                 counter += 1
-#                 # dlibFaceDetector(image, 0, 0)
-#                 getFace(image, values[0], values[1], 0, 0)
-#                 # getFace(image, values[0], values[1], pathGood, pathBad)
-#
-#                 if printDetails:
-#                     printDetails = False
-#             printDetails = True
+            for (x, y) in shape:
+                cv2.circle(faceResidedAlignedCropped, (x, y), 1, (0, 0, 255), 5)
+            cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, faceResidedAlignedCropped)
+            # cv2.imshow("Aligned", faceAligned)
+            # cv2.waitKey(0)
+            badResult += 1
+            return None
 
 
 def researchOrderer(alghoritmName, mode, values, clear):
@@ -847,7 +1013,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print(image)
                 print("Iteracja: " + str(counter))
                 counter += 1
-                # dlibFaceDetector(image, pathGood, pathBad)
+                dlibFaceDetector(image, pathGood, pathBad)
                 getFace(image, values[0], values[1], pathGood, pathBad)
                 if printDetails:
                     printDetails = False
@@ -951,7 +1117,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                     print("Iteracja: " + str(counter))
                     counter += 1
                     # dlibFaceDetector(image, pathBadBad, pathBad)
-                    getFace(image, values[0], values[1], pathBadBad, pathBad)
+                    # getFace(image, values[0], values[1], pathBadBad, pathBad)
                     if printDetails:
                         printDetails = False
                 printDetails = True
