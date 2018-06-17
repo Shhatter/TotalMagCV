@@ -13,6 +13,7 @@ import os
 import math
 from imutils import face_utils
 from imutils.face_utils import FaceAligner
+from skimage.filters.rank import equalize
 from skimage.measure import compare_ssim as ssim
 from skimage.color import rgb2gray
 from sklearn.preprocessing import MinMaxScaler
@@ -774,7 +775,7 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
                                                 pnet, rnet, onet, threshold, factor)
     isGood, rect, x, y, hPoint, wPoint, faceResidedAlignedCropped = checkROIOfImage(bounding_boxes,
                                                                                     faceResidedAlignedCropped,
-                                                                                    width, height, True)
+                                                                                    width, height, False)
 
     if ((isGood == False) or (rect == None)):
         # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
@@ -851,8 +852,6 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
         #
         #
 
-
-
         # cv2.imshow("Aligned", faceAligned)
         # cv2.waitKey(0)
         badResult += 1
@@ -890,7 +889,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print("Iteracja: " + str(counter))
                 counter += 1
                 # dlibFaceDetector(image, pathGood, pathBad)
-                getFace(image, values[0], values[1], pathGood, pathBad)
+                # getFace(image, values[0], values[1], pathGood, pathBad)
                 if printDetails:
                     printDetails = False
             printDetails = True
@@ -938,7 +937,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print("Iteracja: " + str(counter))
                 counter += 1
                 # dlibFaceDetector(image, cpathGood, cpathGoodBad)
-                getFace(image, values[0], values[1], cpathGood, cpathGoodBad)
+                # getFace(image, values[0], values[1], cpathGood, cpathGoodBad)
 
                 if printDetails:
                     printDetails = False
@@ -954,7 +953,7 @@ def researchOrderer(alghoritmName, mode, values, clear):
                 print("Iteracja: " + str(counter))
                 counter += 1
                 # dlibFaceDetector(image, cpathBadBad, cpathBad)
-                getFace(image, values[0], values[1], cpathBadBad, cpathBad)
+                # getFace(image, values[0], values[1], cpathBadBad, cpathBad)
 
                 if printDetails:
                     printDetails = False
@@ -1051,7 +1050,7 @@ def lowestValue(entry):
 
 
 def toGray(colorimg):
-    gray = cv2.cvtColor(colorimg, cv2.COLOR_BGR2GRAY)
+    # gray = cv2.cvtColor(colorimg, cv2.COLOR_BGR2GRAY)
     gray = rgb2gray(colorimg)
     return gray
 
@@ -1731,10 +1730,25 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
 
     for member in aData:
         member.printer()
-
+        # for (xx, yy) in member.shape:
+        #     cv2.circle(member.alignedImage, (xx, yy), 1, (0, 0, 255), 5)
         cleanImage = member.alignedImage.copy()
-        cleanImage = rgb2gray(cleanImage)
+        # cleanImage = rgb2gray(cleanImage)
         # member.alignedImage
+        # member.alignedImage = toGray(member.alignedImage)
+
+        cleanImage = toGray(cleanImage)
+
+        fd, hog_image = hog(image=cleanImage, orientations=9, pixels_per_cell=(8, 8), cells_per_block=(3, 3),
+                            block_norm='L2-Hys',
+                            visualise=True, transform_sqrt=False, feature_vector=True, normalise=None)
+        img_rescale = exposure.equalize_adapthist(hog_image, clip_limit=0.03)
+
+        downscaled = imutils.resize(img_rescale, 600)
+        cv2.imshow("nopper", downscaled)
+        cv2.resizeWindow('image', 600, 600)
+        # cv2.imshow("nopper", img_rescale)
+        cv2.waitKey(0)
         height, width = member.alignedImage.shape[:2]
         print(height, width)
         fp0 = [member.shape[0][0], member.shape[0][1]]
@@ -1807,8 +1821,11 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         fp67 = [member.shape[67][0], member.shape[67][1]]
 
         # wyznaczanie kwadratów :
-
+        #####################################################
+        #####################################################
         # lewa fałdka nosa
+        #####################################################
+        #####################################################
         pointThreeLineY = 0
         pointThreeLineX = 0
         upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (math.pow(fp49[1] - fp51[1], 2))))
@@ -1874,8 +1891,11 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         rightNosePart = cropped
         # cv2.imshow("nopper", member.alignedImage)
         # cv2.waitKey(0)
-
-        ##################################### lewy kącik ust 49 / 59
+        #####################################################
+        #####################################################
+        # lewy kącik ust 49 / 59
+        #####################################################
+        #####################################################
         upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (math.pow(fp49[1] - fp51[1], 2))))
         lowerMounthMiddleLength = int(math.sqrt(math.pow(fp59[0] - fp56[0], 2) + (math.pow(fp59[1] - fp56[1], 2))))
         if (upperMounthMiddleLength > lowerMounthMiddleLength):
@@ -1900,8 +1920,11 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         # cv2.imshow("nope", member.alignedImage)
         #
         # cv2.waitKey(0)
-
+        #####################################################
+        #####################################################
         # prawy kącik ust 53 / 59 ###############
+        #####################################################
+        #####################################################
         upperMounthMiddleLength = int(math.sqrt(math.pow(fp53[0] - fp51[0], 2) + (math.pow(fp53[1] - fp51[1], 2))))
         lowerMounthMiddleLength = int(math.sqrt(math.pow(fp55[0] - fp56[0], 2) + (math.pow(fp55[1] - fp56[1], 2))))
         if (upperMounthMiddleLength < lowerMounthMiddleLength):
@@ -1926,9 +1949,11 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         # cv2.imshow("nope", member.alignedImage)
         #
         # cv2.waitKey(0)
-
+        #####################################################
+        #####################################################
         # lewy kącik oka ##################################
-
+        #####################################################
+        #####################################################
         pointOne = fp17
         pointW = fp36[0] - fp17[0]
         pointH = int(1.5 * math.sqrt(math.pow(fp17[0] - fp36[0], 2) + (math.pow(fp17[1] - fp36[1], 2))))
@@ -1937,11 +1962,15 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         leftEyeEdge = cropped
 
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
-                      (50, 140, 170), 2)
+                      (50, 140, 255), 2)
         # cv2.imshow("nope", member.alignedImage)
         #
         # cv2.waitKey(0)
+        #####################################################
+        #####################################################
         # prawy kącik oka ##################################
+        #####################################################
+        #####################################################
         pointOne = [fp45[0], fp26[1]]
         pointW = fp26[0] - pointOne[0]
         pointH = int(1.5 * math.sqrt(math.pow(fp45[0] - fp26[0], 2) + (math.pow(fp45[1] - fp26[1], 2))))
@@ -2075,15 +2104,15 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         # core = imutils.resize(cleanImage,width=500)
         # cv2.imshow("pre", core)
         # core = toGray(core)
-        # cv2.imshow("grayscale", core)
-        # # cv2.imshow("1 pre", singlePair[1])
-        # # cv2.waitKey(0)
+        # # cv2.imshow("grayscale", core)
+        # # # cv2.imshow("1 pre", singlePair[1])
+        # # # cv2.waitKey(0)
         # g1 = filters.gaussian(core, 0.5, multichannel=False, mode='reflect')
+        # #
+        # #
+        # #
+        # cv2.imshow("0 post", g1)
         #
-        #
-        #
-        # # cv2.imshow("0 post", g1)
-        # # cv2.imshow("1 post", g2)
         #
         # gamma_corrected = exposure.adjust_gamma(core, 2)
         # cv2.imshow("overall", gamma_corrected)
@@ -2098,56 +2127,59 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         #
         # # Equalization
         # selem = disk(30)
-        # img_eq = rank.equalize(core, selem=selem)
+        # img_eq = equalize(core, selem=selem)
         # cv2.imshow("local equalize", img_eq)
         #
         # cv2.waitKey(0)
 
         ######################################################################################################################
-        singleReturnArray = []
-        for singleComparasion in analysedParts:
-            singleReturnArray.append(compare_images(singleComparasion[0], singleComparasion[1], "placki"))
+        # singleReturnArray = []
+        # for singleComparasion in analysedParts:
+        #     singleReturnArray.append(compare_images(singleComparasion[0], singleComparasion[1], "placki"))
+        #
+        # ######################################################################################################################
+        # xNoseEyes, yNoseEyes = intersectionPointFinder(fp39, fp42, fp27, fp30)
+        # xNoseUnderNose, yNoseUnderNose = intersectionPointFinder(fp35, fp31, fp27, fp30)
+        # xNoseMounth, yNoseMounth = intersectionPointFinder(fp48, fp54, fp27, fp30)
+        #
+        # print("@@@@@@@@@@@@@@@@@@@@@@@@")
+        # angle1 = float(findAngle(fp39, [xNoseEyes, yNoseEyes], fp27) / 180)
+        # angle2 = float(findAngle(fp31, [xNoseUnderNose, yNoseUnderNose], fp27) / 180)
+        # angle3 = float(findAngle(fp48, [xNoseMounth, yNoseMounth], fp27) / 180)
+        # print("@@@@@@@@@@@@@@@@@@@@@@@@")
+        #
+        # print("@@@@@@@@@@@@@@@@@@@@@@@@")
+        # angle4 = float(findAngle(fp49, fp48, fp59) / 180)  # lewy kącik
+        # angle5 = float(findAngle(fp53, fp54, fp55) / 180)  # prawy kacik
+        # angle6 = float(findAngle(fp27, fp48, fp56) / 180)  # lewy kacik i nos
+        # angle7 = float(findAngle(fp27, fp54, fp56) / 180)  # prawy kacik i nos
+        #
+        # angler = [angle1, angle2, angle3, angle4, angle5, angle6, angle7]
+        # print(angler)
+        # singleReturnArrayFinal = singleReturnArray + angler
+        #
+        # #####################################################################################################################
+        #
+        # pointsTable = [fp27, fp28, fp29, fp30, fp31, fp32, fp33, fp34, fp35, fp36, fp37, fp38, fp39, fp40, fp41, fp42,
+        #                fp43, fp44, fp45, fp46, fp47, fp48, fp49, fp50, fp51, fp52, fp53, fp54, fp55, fp56, fp57, fp58,
+        #                fp59, fp60, fp61, fp62, fp63, fp64, fp65, fp66]
+        # for singlePoint in pointsTable:
+        #     r1 = singlePoint[0] / width
+        #     r2 = singlePoint[1] / height
+        #     singleReturnArrayFinal.append(r1)
+        #     singleReturnArrayFinal.append(r2)
+        # #####################################################################################################################
+        # if (isSickCollection == 0 or isSickCollection == 2):
+        #     singleReturnArrayFinal.append(0)
+        # elif(isSickCollection == 99):
+        #     cv2.imwrite(pathCore + pathlib.Path(member.fileName).name, member.alignedImage)
+        #
+        # else:
+        #     singleReturnArrayFinal.append(1)
+        #
+        # outputDataArray.append(singleReturnArrayFinal)
 
-        ######################################################################################################################
-        xNoseEyes, yNoseEyes = intersectionPointFinder(fp39, fp42, fp27, fp30)
-        xNoseUnderNose, yNoseUnderNose = intersectionPointFinder(fp35, fp31, fp27, fp30)
-        xNoseMounth, yNoseMounth = intersectionPointFinder(fp48, fp54, fp27, fp30)
-
-        print("@@@@@@@@@@@@@@@@@@@@@@@@")
-        angle1 = float(findAngle(fp39, [xNoseEyes, yNoseEyes], fp27) / 180)
-        angle2 = float(findAngle(fp31, [xNoseUnderNose, yNoseUnderNose], fp27) / 180)
-        angle3 = float(findAngle(fp48, [xNoseMounth, yNoseMounth], fp27) / 180)
-        print("@@@@@@@@@@@@@@@@@@@@@@@@")
-
-        print("@@@@@@@@@@@@@@@@@@@@@@@@")
-        angle4 = float(findAngle(fp49, fp48, fp59) / 180)  # lewy kącik
-        angle5 = float(findAngle(fp53, fp54, fp55) / 180)  # prawy kacik
-        angle6 = float(findAngle(fp27, fp48, fp56) / 180)  # lewy kacik i nos
-        angle7 = float(findAngle(fp27, fp54, fp56) / 180)  # prawy kacik i nos
-
-        angler = [angle1, angle2, angle3, angle4, angle5, angle6, angle7]
-        print(angler)
-        singleReturnArrayFinal = singleReturnArray + angler
-
-        #####################################################################################################################
-
-        pointsTable = [fp27, fp28, fp29, fp30, fp31, fp32, fp33, fp34, fp35, fp36, fp37, fp38, fp39, fp40, fp41, fp42,
-                       fp43, fp44, fp45, fp46, fp47, fp48, fp49, fp50, fp51, fp52, fp53, fp54, fp55, fp56, fp57, fp58,
-                       fp59, fp60, fp61, fp62, fp63, fp64, fp65, fp66]
-        for singlePoint in pointsTable:
-            r1 = singlePoint[0] / width
-            r2 = singlePoint[1] / height
-            singleReturnArrayFinal.append(r1)
-            singleReturnArrayFinal.append(r2)
-        #####################################################################################################################
-        if (isSickCollection == 0 or isSickCollection == 2):
-            singleReturnArrayFinal.append(0)
-        else:
-            singleReturnArrayFinal.append(1)
-
-        outputDataArray.append(singleReturnArrayFinal)
-
-        cv2.imwrite(pathCore + pathlib.Path(member.fileName).name, member.alignedImage)
+        # cv2.imwrite(pathCore + pathlib.Path(member.fileName).name, member.alignedImage)
     print("dlugosc wektora z wydobytymi danymi: " + str(len(outputDataArray)))
     for x in outputDataArray:
         print(x)
@@ -2177,6 +2209,8 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         with open('ExposedData_Sick_TOTAL_SOFT_test.txt', 'w') as filehandle:
             json.dump(outputDataArray, filehandle)
             aData = []
+    elif (isSickCollection == 99):  # chorzy testowi
+        print("didn't save it ")
     analysedData = []
 
 
@@ -2243,6 +2277,7 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
 
 
 researchOrderer("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809, 44], 0)
+preprecessCorrectedFacePartsAndAngles(analysedData, 99, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 
 file.close()
 
