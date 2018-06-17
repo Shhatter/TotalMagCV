@@ -589,7 +589,7 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
 
     isGood, rect, x, y, hPoint, wPoint, inputFile = checkROIOfImage(bounding_boxes, inputFile, width, height, False)
     if ((isGood == False) or (rect == None)):
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
         return None
     #####################################################################################
@@ -693,7 +693,7 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
         # cv2.imshow("odrzucony na odchyleniach",inputFile)
         # cv2.waitKey(0)
         badResult += 1
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         return None
 
     # for (xx, yy) in shape:
@@ -719,7 +719,7 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
     isGood, rect, x, y, hPoint, wPoint, inputFile = checkROIOfImage(bounding_boxes, inputFile, width, height, False)
     greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
     if ((isGood == False) or (rect == None)):
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
         return None
 
@@ -735,7 +735,7 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
 
     isGood, rect, x, y, hPoint, wPoint, faceAligned = checkROIOfImage(bounding_boxes, faceAligned, width, height, False)
     if ((isGood == False) or (rect == None)):
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
         return None
 
@@ -755,7 +755,7 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
     isGood, rect, x, y, hPoint, wPoint, faceAlignedAndCropped = checkROIOfImage(bounding_boxes, faceAlignedAndCropped,
                                                                                 width, height, False)
     if ((isGood == False) or (rect == None)):
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
         return None
     greyImage = cv2.cvtColor(faceAlignedAndCropped, cv2.COLOR_BGR2GRAY)
@@ -777,7 +777,7 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
                                                                                     width, height, True)
 
     if ((isGood == False) or (rect == None)):
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, inputFile)
         badResult += 1
         return None
 
@@ -803,24 +803,24 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
     # KWADRATY KONTROLNE !!!
     xCenter = (int)((rectWidth / 2) + x)
     yCenter = (int)((rectHeight / 2) + y)
-    cv2.circle(faceResidedAlignedCropped, (xCenter, yCenter), 1, (200, 255, 23), 5)
-
+    # cv2.circle(faceResidedAlignedCropped, (xCenter, yCenter), 1, (200, 255, 23), 5) # srodek ROI TODO: Dodać warunki na środek ROI do obrysu twarzy, kącików oczu i dołu nosa, dodanie simm na oczy, ew. dodanie warunku by jak brew cała wpadła do obszaru wykluczenia to wywalić
+    # TODO : ew warunek na oczy i ksztalt twarzy by uchronic przed "pitch" . ew warunek na przekrzywnie na podstawie srodka nosa punktow itp
     # r1X,r1Y,r1W,r1H
     r1X = x
     r1Y = y
     r1W = int(0.29 * rectWidth)
     r1H = yCenter
-    cv2.rectangle(faceResidedAlignedCropped, (r1X, r1Y),
-                  (x + r1W, r1H), (255, 255, 0), 2)
+    # cv2.rectangle(faceResidedAlignedCropped, (r1X, r1Y),
+    #               (x + r1W, r1H), (255, 255, 0), 2)
 
-    r2X = wPoint - int(0.295 * rectWidth)
+    r2X = wPoint - int(0.29 * rectWidth)
     r2Y = y
     r2W = int(0.29 * rectWidth)
     r2H = yCenter
     # cv2.imshow("aaaa",faceAligned)
     # cv2.waitKey(0)
-    cv2.rectangle(faceResidedAlignedCropped, (r2X, r2Y),
-                  (wPoint, r2H), (0, 255, 200), 2)
+    # cv2.rectangle(faceResidedAlignedCropped, (r2X, r2Y),
+    #               (wPoint, r2H), (0, 255, 200), 2)
 
     fp36 = [shape[36][0], shape[36][1]]  # lewy zewnętrzny kącik oka
     fp45 = [shape[45][0], shape[45][1]]  # prawy zewnetrzny kacik oka
@@ -840,16 +840,19 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
         print("analysedData passed! : " + str(analysedData.__len__()))
         # for (x, y) in shape:
         #     cv2.circle(faceResidedAlignedCropped, (x, y), 1, (0, 0, 255), 5)
-        cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceResidedAlignedCropped)
+        # cv2.imwrite(goodPath + pathlib.Path(inputFilePath).name, faceResidedAlignedCropped)
         goodResult += 1
         return None
 
     else:
-        # cv2.imshow("odrzucony na ostatniej walidacji",faceAligned)
-        # cv2.waitKey(0)
-        for (x, y) in shape:
-            cv2.circle(faceResidedAlignedCropped, (x, y), 1, (0, 0, 255), 5)
-        cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, faceResidedAlignedCropped)
+        # for (x, y) in shape:
+        #     cv2.circle(faceResidedAlignedCropped, (x, y), 1, (0, 0, 255), 5)
+        # cv2.imwrite(badPath + pathlib.Path(inputFilePath).name, faceResidedAlignedCropped)
+        #
+        #
+
+
+
         # cv2.imshow("Aligned", faceAligned)
         # cv2.waitKey(0)
         badResult += 1
