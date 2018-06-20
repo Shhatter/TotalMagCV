@@ -2645,3 +2645,25 @@ Tue Jun 12 23:12:32 2018	SICK	MTCNN: threshold:_[0.2, 0.5, 0.8]_factor:_0.96	tru
 Tue Jun 12 23:12:32 2018	SICK	MTCNN: threshold:_[0.2, 0.5, 0.8]_factor:_0.97	truePositive:	500	falseNegative:	5	falsePositive:	496	trueNegative:	9	Total:	1010	accuracy:	0.503960396039604	precision:	0.5020080321285141	recall(TPR):	0.9900990099009901	fallout(FPR):	0.9821782178217822	fMeasure:	0.6662225183211193
 Tue Jun 12 23:12:32 2018	SICK	MTCNN: threshold:_[0.2, 0.5, 0.8]_factor:_0.98	truePositive:	502	falseNegative:	3	falsePositive:	495	trueNegative:	10	Total:	1010	accuracy:	0.5069306930693069	precision:	0.5035105315947843	recall(TPR):	0.994059405940594	fallout(FPR):	0.9801980198019802	fMeasure:	0.6684420772303595
 Tue Jun 12 23:12:32 2018	SICK	MTCNN: threshold:_[0.2, 0.5, 0.8]_factor:_0.99	truePositive:	502	falseNegative:	3	falsePositive:	497	trueNegative:	8	Total:	1010	accuracy:	0.504950495049505	precision:	0.5025025025025025	recall(TPR):	0.994059405940594	fallout(FPR):	0.9841584158415841	fMeasure:	0.6675531914893618
+
+##################################################################### 
+Test : Mon Jun 18 16:03:27 2018
+
+Mon Jun 18 16:03:27 2018	HEALTHY	HOG: Upsample 0	truePositive:	82	falseNegative:	18	falsePositive:	86	trueNegative:	14	Total:	200	accuracy:	0.48	precision:	0.4880952380952381	recall(TPR):	0.82	fallout(FPR):	0.86	fMeasure:	0.6119402985074627
+
+##################################################################### 
+Test : Mon Jun 18 16:10:52 2018
+
+Mon Jun 18 16:10:52 2018	HEALTHY	HOG: Upsample 0	truePositive:	82	falseNegative:	18	falsePositive:	86	trueNegative:	14	Total:	200	accuracy:	0.48	precision:	0.4880952380952381	recall(TPR):	0.82	fallout(FPR):	0.86	fMeasure:	0.6119402985074627
+
+##################################################################### 
+Test : Tue Jun 19 22:46:52 2018
+
+
+##################################################################### 
+Test : Wed Jun 20 00:32:46 2018
+
+
+##################################################################### 
+Test : Wed Jun 20 00:32:58 2018
+
