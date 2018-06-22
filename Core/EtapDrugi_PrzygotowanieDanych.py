@@ -687,8 +687,8 @@ def getFace(inputFilePath, threshold, factor, goodPath, badPath):
             (
                     rSideEyeLength * sizeEyeFactor) > lSideEyeLength):  # todo : dodać korektę na zmianę odległości kącików ust na coś innego
         # greyImage = cv2.cvtColor(inputFile, cv2.COLOR_BGR2GRAY)
-        for (x, y) in shape:
-            cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
+        # for (x, y) in shape:
+        #     cv2.circle(inputFile, (x, y), 1, (0, 0, 255), 5)
         # cv2.imshow("test", inputFile)
         # cv2.waitKey(0)
         # cv2.circle(greyImage, (xCenter, yCenter), 1, (200, 255, 23), 5)
@@ -1895,11 +1895,70 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         # wyznaczanie kwadratów :
         #####################################################
         #####################################################
+        # lewa podpowieka ##################################
+        slope = math.atan2(fp30[1] - fp39[1], fp39[0] - fp30[0]) * (180.0 / math.pi)
+        pointOne = [fp36[0], 0]
+        pointW = int(math.sqrt(math.pow(fp39[0] - fp36[0], 2) + (math.pow(fp39[1] - fp36[1], 2))))
+        if (slope > 90):
+            slope = math.fabs(slope - 180)
+
+        if (slope < 22):
+            pointH = 2 * int(math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2))))
+
+        else:
+            pointH = int(1.5 * (math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2)))))
+
+        pointOne[1] = higestValue([fp36[1], fp40[1], fp39[1], fp41[1]])
+
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        leftUnderEye = cropped
+        leftNoseYStart = pointOne[1] + pointH
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 240, 70), 2)
+
+        print("slope: " + str(slope))
+
+        # cv2.imshow("nope", member.alignedImage)
+        #
+        # cv2.waitKey(0)
+
+        # prawa podpowieka ##################################
+        slope = math.atan2(fp30[1] - fp42[1], fp42[0] - fp30[0]) * (180.0 / math.pi)
+        pointOne = [fp42[0], 0]
+        pointW = int(math.sqrt(math.pow(fp42[0] - fp45[0], 2) + (math.pow(fp42[1] - fp45[1], 2))))
+
+        if (slope > 90):
+            slope = math.fabs(slope - 180)
+
+        if (slope < 22):
+            pointH = 2 * int(math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2))))
+
+        else:
+            pointH = int(1.5 * (math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2)))))
+
+        pointOne[1] = higestValue([fp42[1], fp46[1], fp47[1], fp45[1]])
+        rightNoseYStart = pointOne[1] + pointH
+
+        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        rightUnderEye = cropped
+
+        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+                      (50, 240, 70), 2)
+
+        print("slope: " + str(slope))
+
+
+
+
         # lewa fałdka nosa
         #####################################################
         #####################################################
+
+        # leftNoseYStart
+
         pointThreeLineY = 0
         pointThreeLineX = 0
+
         upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (
             math.pow(fp49[1] - fp51[1], 2))))  # TODO: dopisać poprawkę kątu dla twarzy która jest pochylona w dół
         lowerMounthMiddleLength = int(math.sqrt(math.pow(fp59[0] - fp57[0], 2) + (math.pow(fp59[1] - fp57[1], 2))))
@@ -1908,7 +1967,7 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         else:
             pointThreeLineY = fp59[0]
 
-        pointOne = [fp36[0], fp30[1]]
+        pointOne = [fp36[0], leftNoseYStart]
 
         distanceBetweenNewPointandEyeEdge = int(
             math.sqrt(math.pow(pointOne[0] - fp36[0], 2) + (math.pow(pointOne[1] - fp36[1], 2))))
@@ -1920,12 +1979,44 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         pointW = pointThreeLineY - pointOne[0]
 
         pointThreeLineX = int(fp59[1] + math.sqrt(math.pow(fp59[0] - fp49[0], 2) + (math.pow(fp59[1] - fp49[1], 2))))
-        pointH = pointThreeLineX - pointOne[1]
+        pointH = pointThreeLineX - leftNoseYStart
+
         cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
 
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
                       (255, 255, 0), 2)
         leftNosePart = cropped
+        # cv2.imshow("nopper", member.alignedImage)
+        # cv2.waitKey(0)
+
+        # pointThreeLineY = 0
+        # pointThreeLineX = 0
+        # upperMounthMiddleLength = int(math.sqrt(math.pow(fp49[0] - fp51[0], 2) + (
+        #     math.pow(fp49[1] - fp51[1], 2))))  # TODO: dopisać poprawkę kątu dla twarzy która jest pochylona w dół
+        # lowerMounthMiddleLength = int(math.sqrt(math.pow(fp59[0] - fp57[0], 2) + (math.pow(fp59[1] - fp57[1], 2))))
+        # if (upperMounthMiddleLength > lowerMounthMiddleLength):
+        #     pointThreeLineY = fp49[0]
+        # else:
+        #     pointThreeLineY = fp59[0]
+        #
+        # pointOne = [fp36[0], fp30[1]]
+        #
+        # distanceBetweenNewPointandEyeEdge = int(
+        #     math.sqrt(math.pow(pointOne[0] - fp36[0], 2) + (math.pow(pointOne[1] - fp36[1], 2))))
+        # distanceBetweenEyeErisEdges = int(
+        #     math.sqrt(math.pow(fp41[0] - fp40[0], 2) + (math.pow(fp41[1] - fp40[1], 2))))
+        # if (distanceBetweenNewPointandEyeEdge < distanceBetweenEyeErisEdges):
+        #     pointOne[1] += int(math.sqrt(math.pow(fp41[0] - fp40[0], 2) + (math.pow(fp41[1] - fp40[1], 2))))
+        #
+        # pointW = pointThreeLineY - pointOne[0]
+        #
+        # pointThreeLineX = int(fp59[1] + math.sqrt(math.pow(fp59[0] - fp49[0], 2) + (math.pow(fp59[1] - fp49[1], 2))))
+        # pointH = pointThreeLineX - pointOne[1]
+        # cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
+        #
+        # cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
+        #               (255, 255, 0), 2)
+        # leftNosePart = cropped
         # cv2.imshow("nopper", member.alignedImage)
         # cv2.waitKey(0)
 
@@ -1953,10 +2044,10 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
             pointTwo[1] += int(math.sqrt(math.pow(fp46[0] - fp47[0], 2) + (math.pow(fp46[1] - fp47[1], 2))))
 
         pointW = pointTwo[0] - poczatekKwadratuX
-        pointOne = [poczatekKwadratuX, pointTwo[1]]
+        pointOne = [poczatekKwadratuX, rightNoseYStart]
 
         pointThreeLineY = int(fp55[1] + math.sqrt(math.pow(fp55[0] - fp53[0], 2) + (math.pow(fp55[1] - fp53[1], 2))))
-        pointH = pointThreeLineY - pointOne[1]
+        pointH = pointThreeLineY - rightNoseYStart
         cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
 
         cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
@@ -2078,55 +2169,7 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         #
         # cv2.waitKey(0)
 
-        # lewa podpowieka ##################################
-        slope = math.atan2(fp30[1] - fp39[1], fp39[0] - fp30[0]) * (180.0 / math.pi)
-        pointOne = [fp36[0], 0]
-        pointW = int(math.sqrt(math.pow(fp39[0] - fp36[0], 2) + (math.pow(fp39[1] - fp36[1], 2))))
-        if (slope > 90):
-            slope = math.fabs(slope - 180)
 
-        if (slope < 22):
-            pointH = 2 * int(math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2))))
-
-        else:
-            pointH = int(1.5 * (math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2)))))
-
-        pointOne[1] = higestValue([fp36[1], fp40[1], fp39[1], fp41[1]])
-
-        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
-        leftUnderEye = cropped
-
-        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
-                      (50, 240, 70), 2)
-
-        print("slope: " + str(slope))
-        # cv2.imshow("nope", member.alignedImage)
-        #
-        # cv2.waitKey(0)
-
-        # prawa podpowieka ##################################
-        slope = math.atan2(fp30[1] - fp42[1], fp42[0] - fp30[0]) * (180.0 / math.pi)
-        pointOne = [fp42[0], 0]
-        pointW = int(math.sqrt(math.pow(fp42[0] - fp45[0], 2) + (math.pow(fp42[1] - fp45[1], 2))))
-
-        if (slope > 90):
-            slope = math.fabs(slope - 180)
-
-        if (slope < 22):
-            pointH = 2 * int(math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2))))
-
-        else:
-            pointH = int(1.5 * (math.sqrt(math.pow(fp29[0] - fp30[0], 2) + (math.pow(fp29[1] - fp30[1], 2)))))
-
-        pointOne[1] = higestValue([fp42[1], fp46[1], fp47[1], fp45[1]])
-
-        cropped = cleanImage[pointOne[1]:pointOne[1] + pointH, pointOne[0]:pointOne[0] + pointW]
-        rightUnderEye = cropped
-
-        cv2.rectangle(member.alignedImage, (pointOne[0], pointOne[1]), (pointOne[0] + pointW, pointOne[1] + pointH),
-                      (50, 240, 70), 2)
-
-        print("slope: " + str(slope))
         # cv2.imshow("nope", member.alignedImage)
         #
         # cv2.waitKey(0)
@@ -2235,7 +2278,8 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
         # cv2.imshow("local equalize", img_eq)
         #
         # cv2.waitKey(0)
-
+        cv2.imshow("analysed", member.alignedImage)
+        cv2.waitKey(0)
         #####################################################################################################################
         singleReturnArray = []
         for singleComparasion in analysedParts:
@@ -2399,8 +2443,8 @@ def preprecessCorrectedFacePartsAndAngles(aData, isSickCollection, path):
 # researchOrderer2("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809, 44], "Proby Etapu trzeciego/Testowy/Pozytywne/Lekkie/*")
 # preprecessCorrectedFacePartsAndAngles(analysedData, 3, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 #
-researchOrderer2("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809, 44], "Proby Etapu trzeciego/Uczacy/Negatywne/*")
-preprecessCorrectedFacePartsAndAngles(analysedData, 0, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
+# researchOrderer2("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809, 44], "Proby Etapu trzeciego/Uczacy/Negatywne/*")
+# preprecessCorrectedFacePartsAndAngles(analysedData, 0, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 
 # researchOrderer2("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809, 44], "Proby Etapu trzeciego/Uczacy/Pozytywne/*")
 # preprecessCorrectedFacePartsAndAngles(analysedData, 1, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
@@ -2408,7 +2452,8 @@ preprecessCorrectedFacePartsAndAngles(analysedData, 0, "Proby Etapu trzeciego/Uc
 # researchOrderer2("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809, 44], "Proby Etapu trzeciego/Testowy/Negatywne/*")
 # preprecessCorrectedFacePartsAndAngles(analysedData, 2, "Proby Etapu trzeciego/Uczacy/Wyjsciowe/")
 #
-
+researchOrderer2("MTCNN", "HEALTHY", [[0.2, 0.5, 0.8], 0.809, 44], "ProbkiBadawcze/OsobaChora/Dobre/*")
+preprecessCorrectedFacePartsAndAngles(analysedData, 99, "ProbkiBadawcze/OsobaChora/Przeanalizowane/")
 
 file.close()
 
